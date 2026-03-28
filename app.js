@@ -31,6 +31,7 @@ let latestQrText = '';
 let stream = null;
 let useEnvironment = true;
 let frameCheckTimer = null;
+let lastQrFrameDataUrl = '';
 
 function setStatus(text, type='info') {
   els.statusBanner.className = `status ${type}`;
@@ -47,6 +48,10 @@ function setCameraState(state, label, hint) {
 async function startCamera() {
   try {
     if (stream) stream.getTracks().forEach(t => t.stop());
+    if (frameCheckTimer) clearInterval(frameCheckTimer);
+    latestQrText = '';
+    lastQrFrameDataUrl = '';
+
     stream = await navigator.mediaDevices.getUserMedia({
       video: {
         facingMode: useEnvironment ? { ideal: 'environment' } : 'user',
@@ -56,47 +61,62 @@ async function startCamera() {
       audio: false
     });
     els.video.srcObject = stream;
-    setCameraState('state-idle', 'Đã bật camera', 'Đưa QR CCCD vào trong khung vuông rồi bấm Quét / Chụp QR.');
-    startFrameCheck();
+    setCameraState('state-idle', 'Đã bật camera', 'Đưa mã QR CCCD vào trong khung vuông. Chỉ khi đọc được QR thật, khung mới chuyển xanh.');
+    startLiveQrDetection();
   } catch (err) {
     console.error(err);
     setStatus('Không bật được camera.', 'error');
   }
 }
 
-function startFrameCheck() {
+function startLiveQrDetection() {
   if (frameCheckTimer) clearInterval(frameCheckTimer);
-  frameCheckTimer = setInterval(() => {
+  frameCheckTimer = setInterval(async () => {
     if (!els.video.videoWidth || !els.video.videoHeight) return;
-    const canvas = els.captureCanvas;
-    const ctx = canvas.getContext('2d', { willReadFrequently: true });
-    canvas.width = 420;
-    canvas.height = 320;
-    ctx.drawImage(els.video, 0, 0, canvas.width, canvas.height);
-    const { data, width, height } = ctx.getImageData(0, 0, canvas.width, canvas.height);
 
-    let brightness = 0;
-    let contrast = 0;
-    for (let i = 0; i < data.length; i += 4 * 12) {
-      const gray = data[i] * 0.299 + data[i+1] * 0.587 + data[i+2] * 0.114;
-      brightness += gray;
-    }
-    for (let y = 2; y < height - 2; y += 5) {
-      for (let x = 2; x < width - 2; x += 5) {
-        const idx = (y * width + x) * 4;
-        contrast += Math.abs(data[idx] - data[idx + 4]) + Math.abs(data[idx] - data[idx + width * 4]);
-      }
+    const dataUrl = captureFrameDataUrl();
+    if (!dataUrl) return;
+
+    const qrText = await decodeQrFromDataUrl(dataUrl);
+    if (qrText) {
+      latestQrText = qrText;
+      lastQrFrameDataUrl = dataUrl;
+      setCameraState('state-ready', 'Đã đọc được QR', 'QR hợp lệ đã được nhận. Anh/chị có thể bấm Quét / Chụp QR để xác nhận.');
+      return;
     }
 
-    const avgBrightness = brightness / (data.length / (4 * 12));
-    if (contrast > 80000 && avgBrightness > 60 && avgBrightness < 230) {
-      setCameraState('state-ready', 'Đã thấy QR khá rõ', 'Có thể bấm Quét / Chụp QR.');
-    } else if (contrast > 40000) {
-      setCameraState('state-warning', 'Đã thấy QR nhưng chưa rõ', 'Giữ điện thoại chắc hơn hoặc đưa gần hơn.');
+    const quality = estimateQrVisualQuality(dataUrl);
+    if (quality === 'warning') {
+      setCameraState('state-warning', 'Đã thấy vùng QR nhưng chưa đọc được', 'Giữ chắc tay hơn, tránh lóa sáng, đưa QR gần hơn chút.');
     } else {
-      setCameraState('state-idle', 'Chưa thấy QR rõ', 'Đưa mã QR vào giữa khung vuông.');
+      setCameraState('state-idle', 'Chưa đọc được QR', 'Đưa mã QR vào giữa khung vuông, đủ sáng và không rung.');
     }
-  }, 700);
+  }, 500);
+}
+
+function estimateQrVisualQuality(dataUrl) {
+  const canvas = els.captureCanvas;
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
+  canvas.width = 360;
+  canvas.height = 360;
+  ctx.drawImage(els.video, 0, 0, canvas.width, canvas.height);
+  const { data, width, height } = ctx.getImageData(0, 0, canvas.width, canvas.height);
+
+  let brightness = 0;
+  let contrast = 0;
+  for (let i = 0; i < data.length; i += 4 * 12) {
+    brightness += data[i] * 0.299 + data[i + 1] * 0.587 + data[i + 2] * 0.114;
+  }
+  for (let y = 2; y < height - 2; y += 6) {
+    for (let x = 2; x < width - 2; x += 6) {
+      const idx = (y * width + x) * 4;
+      contrast += Math.abs(data[idx] - data[idx + 4]) + Math.abs(data[idx] - data[idx + width * 4]);
+    }
+  }
+
+  const avgBrightness = brightness / (data.length / (4 * 12));
+  if (contrast > 35000 && avgBrightness > 60 && avgBrightness < 230) return 'warning';
+  return 'idle';
 }
 
 function dataUrlToFile(dataUrl, filename) {
@@ -195,33 +215,32 @@ async function handleQrImage(dataUrl) {
   latestQrText = await decodeQrFromDataUrl(dataUrl);
   if (!latestQrText) {
     setStatus('Chưa đọc được QR. Anh/chị có thể chụp lại hoặc dùng OCR fallback sau.', 'error');
+    setCameraState('state-warning', 'Chụp được ảnh nhưng chưa decode được QR', 'Thử lại với QR lớn hơn, nét hơn, ít lóa hơn.');
     return;
   }
   parseQrText(latestQrText);
   latestResponse = { qr_text: latestQrText };
   els.debugOutput.textContent = JSON.stringify({ qr_text: latestQrText }, null, 2);
   setStatus('Đã đọc QR và điền dữ liệu chính từ QR.', 'success');
+  setCameraState('state-ready', 'Đã xác nhận QR hợp lệ', 'Dữ liệu QR đã được điền vào form. Tiếp tục chụp mặt trước/mặt sau.');
 }
 
 async function runFallbackOcr() {
   const frontSrc = els.frontPreview.src;
   const backSrc = els.backPreview.src;
-  if (!frontSrc || !backSrc || !frontSrc.startsWith('data:') && !frontSrc.startsWith('blob:') || !backSrc) {
-    setStatus('Cần có ảnh mặt trước và mặt sau để chạy OCR fallback.', 'error');
+  if (!frontSrc || !backSrc || !frontSrc.startsWith('data:') || !backSrc.startsWith('data:')) {
+    setStatus('Cần có ảnh mặt trước và mặt sau chụp từ camera để chạy OCR fallback.', 'error');
     return;
   }
 
-  const frontFile = frontSrc.startsWith('data:') ? dataUrlToFile(frontSrc, 'front.jpg') : null;
-  const backFile = backSrc.startsWith('data:') ? dataUrlToFile(backSrc, 'back.jpg') : null;
-  if (!frontFile || !backFile) {
-    setStatus('Hiện fallback OCR chỉ chạy chắc chắn với ảnh chụp trực tiếp từ camera.', 'error');
-    return;
-  }
-
+  const frontFile = dataUrlToFile(frontSrc, 'front.jpg');
+  const backFile = dataUrlToFile(backSrc, 'back.jpg');
   const formData = new FormData();
   formData.append('front', frontFile);
   formData.append('back', backFile);
-  if (latestQrText) formData.append('qr', dataUrlToFile(els.qrPreview.src, 'qr.jpg'));
+  if (els.qrPreview.src?.startsWith('data:')) {
+    formData.append('qr', dataUrlToFile(els.qrPreview.src, 'qr.jpg'));
+  }
 
   setStatus('Đang chạy OCR fallback từ ảnh mặt trước/mặt sau...', 'info');
   try {
@@ -246,6 +265,10 @@ els.switchCameraBtn.addEventListener('click', () => {
   startCamera();
 });
 els.captureQrBtn.addEventListener('click', async () => {
+  if (latestQrText && lastQrFrameDataUrl) {
+    await handleQrImage(lastQrFrameDataUrl);
+    return;
+  }
   const dataUrl = captureFrameDataUrl();
   if (!dataUrl) {
     setStatus('Camera chưa sẵn sàng.', 'error');
