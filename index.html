@@ -13,9 +13,9 @@
   <div class="app-shell">
     <header class="topbar">
       <div>
-        <p class="eyebrow">CCCD CAPTURE V4.1</p>
-        <h1>Test webapp OCR CCCD</h1>
-        <p class="subtext">Frontend này gọi backend V4 để nhận dạng và đổ dữ liệu lên form.</p>
+        <p class="eyebrow">CCCD CAPTURE V4.2</p>
+        <h1>Quét CCCD với khung định vị</h1>
+        <p class="subtext">Đưa CCCD vào trong khung. Khi khung chuyển xanh, anh/chị bấm chụp để OCR.</p>
       </div>
       <div class="api-box">
         <label>Backend API</label>
@@ -23,34 +23,59 @@
       </div>
     </header>
 
-    <section class="card upload-card">
+    <section class="card camera-card">
       <div class="card-head">
-        <h2>1. Chọn ảnh CCCD</h2>
-        <button id="analyzeBtn" class="btn primary">Phân tích OCR</button>
+        <h2>1. Camera CCCD</h2>
+        <div class="camera-actions">
+          <button id="startCameraBtn" class="btn secondary">Bật camera</button>
+          <button id="switchCameraBtn" class="btn secondary">Đổi camera</button>
+        </div>
       </div>
 
-      <div class="upload-grid">
+      <div class="camera-stage">
+        <video id="video" autoplay playsinline muted></video>
+        <canvas id="captureCanvas" hidden></canvas>
+
+        <div class="camera-overlay">
+          <div id="guideFrame" class="guide-frame state-idle"></div>
+          <div class="camera-status-box">
+            <strong id="cameraStateLabel">Chưa bật camera</strong>
+            <span id="cameraStateHint">Bật camera rồi đưa CCCD vào giữa khung.</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="capture-grid">
+        <button class="btn primary" id="captureFrontBtn">Chụp mặt trước</button>
+        <button class="btn primary" id="captureBackBtn">Chụp mặt sau</button>
+        <button class="btn secondary" id="captureQrBtn">Chụp QR</button>
+      </div>
+
+      <div class="upload-grid preview-grid">
         <label class="upload-tile">
           <span>Mặt trước</span>
           <input type="file" id="frontInput" accept="image/*" hidden>
           <img id="frontPreview" alt="Mặt trước">
-          <strong>Chọn ảnh</strong>
+          <strong>Tải ảnh</strong>
         </label>
         <label class="upload-tile">
           <span>Mặt sau</span>
           <input type="file" id="backInput" accept="image/*" hidden>
           <img id="backPreview" alt="Mặt sau">
-          <strong>Chọn ảnh</strong>
+          <strong>Tải ảnh</strong>
         </label>
         <label class="upload-tile">
           <span>QR (tuỳ chọn)</span>
           <input type="file" id="qrInput" accept="image/*" hidden>
           <img id="qrPreview" alt="QR">
-          <strong>Chọn ảnh</strong>
+          <strong>Tải ảnh</strong>
         </label>
       </div>
 
-      <div id="statusBanner" class="status info">Sẵn sàng để test.</div>
+      <div class="status-row">
+        <div id="statusBanner" class="status info">Sẵn sàng để test.</div>
+        <button id="analyzeBtn" class="btn primary">Phân tích OCR</button>
+      </div>
     </section>
 
     <section class="card result-card">
