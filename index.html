@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CCCD Capture V4 Webapp</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">CCCD CAPTURE V4.1</p>
+        <h1>Test webapp OCR CCCD</h1>
+        <p class="subtext">Frontend này gọi backend V4 để nhận dạng và đổ dữ liệu lên form.</p>
+      </div>
+      <div class="api-box">
+        <label>Backend API</label>
+        <input id="apiBase" value="http://127.0.0.1:8010" />
+      </div>
+    </header>
+
+    <section class="card upload-card">
+      <div class="card-head">
+        <h2>1. Chọn ảnh CCCD</h2>
+        <button id="analyzeBtn" class="btn primary">Phân tích OCR</button>
+      </div>
+
+      <div class="upload-grid">
+        <label class="upload-tile">
+          <span>Mặt trước</span>
+          <input type="file" id="frontInput" accept="image/*" hidden>
+          <img id="frontPreview" alt="Mặt trước">
+          <strong>Chọn ảnh</strong>
+        </label>
+        <label class="upload-tile">
+          <span>Mặt sau</span>
+          <input type="file" id="backInput" accept="image/*" hidden>
+          <img id="backPreview" alt="Mặt sau">
+          <strong>Chọn ảnh</strong>
+        </label>
+        <label class="upload-tile">
+          <span>QR (tuỳ chọn)</span>
+          <input type="file" id="qrInput" accept="image/*" hidden>
+          <img id="qrPreview" alt="QR">
+          <strong>Chọn ảnh</strong>
+        </label>
+      </div>
+
+      <div id="statusBanner" class="status info">Sẵn sàng để test.</div>
+    </section>
+
+    <section class="card result-card">
+      <div class="card-head">
+        <h2>2. Kết quả OCR</h2>
+        <button id="copyJsonBtn" class="btn secondary">Copy JSON</button>
+      </div>
+
+      <div class="form-grid">
+        <div class="field full"><label>Họ và tên</label><input id="full_name"></div>
+        <div class="field"><label>Số CCCD</label><input id="id_number"></div>
+        <div class="field"><label>Số CMND cũ</label><input id="old_id_number"></div>
+        <div class="field"><label>Ngày sinh</label><input id="date_of_birth"></div>
+        <div class="field"><label>Giới tính</label><input id="gender"></div>
+        <div class="field"><label>Ngày cấp</label><input id="issue_date"></div>
+        <div class="field"><label>Ngày hết hạn</label><input id="expiry_date"></div>
+        <div class="field full"><label>Nơi cấp</label><input id="issue_place"></div>
+        <div class="field full"><label>Quê quán</label><textarea id="place_of_origin" rows="2"></textarea></div>
+        <div class="field full"><label>Nơi thường trú</label><textarea id="place_of_residence" rows="3"></textarea></div>
+        <div class="field full"><label>Địa chỉ hiện tại</label><textarea id="current_address" rows="3"></textarea></div>
+      </div>
+    </section>
+
+    <section class="card debug-card">
+      <div class="card-head">
+        <h2>3. Debug OCR</h2>
+      </div>
+      <pre id="debugOutput">Chưa có dữ liệu debug.</pre>
+    </section>
+  </div>
+  <script src="app.js"></script>
+</body>
+</html>
