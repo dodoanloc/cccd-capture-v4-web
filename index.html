@@ -14,8 +14,8 @@
     <header class="topbar">
       <div>
         <p class="eyebrow">CCCD QR-FIRST</p>
-        <h1>Quét QR trước, OCR fallback sau</h1>
-        <p class="subtext">Ưu tiên đọc toàn bộ thông tin từ QR. Ảnh CCCD dùng để lưu hồ sơ và fallback khi cần.</p>
+        <h1>Quét QR trước, chụp CCCD sau</h1>
+        <p class="subtext">Hệ thống tự động nhận QR, điền dữ liệu và chuyển sang bước chụp mặt trước/mặt sau.</p>
       </div>
       <div class="api-box">
         <label>Backend API</label>
@@ -25,11 +25,17 @@
 
     <section class="card camera-card">
       <div class="card-head">
-        <h2>1. Quét QR CCCD</h2>
+        <h2 id="stepTitle">1. Quét QR CCCD</h2>
         <div class="camera-actions">
           <button id="startCameraBtn" class="btn secondary">Bật camera</button>
           <button id="switchCameraBtn" class="btn secondary">Đổi camera</button>
         </div>
+      </div>
+
+      <div class="step-indicator">
+        <div id="stepQr" class="step-chip active">QR</div>
+        <div id="stepImages" class="step-chip">Ảnh CCCD</div>
+        <div id="stepReview" class="step-chip">Review</div>
       </div>
 
       <div class="camera-stage qr-stage">
@@ -39,12 +45,12 @@
           <div id="guideFrame" class="guide-frame qr-frame state-idle"></div>
           <div class="camera-status-box">
             <strong id="cameraStateLabel">Ưu tiên quét mã QR</strong>
-            <span id="cameraStateHint">Đưa mã QR CCCD vào trong khung rồi bấm Chụp QR.</span>
+            <span id="cameraStateHint">Đưa mã QR CCCD vào trong khung. Khi nhận diện thành công, hệ thống sẽ tự chuyển bước.</span>
           </div>
         </div>
       </div>
 
-      <div class="capture-grid qr-actions">
+      <div id="qrActions" class="capture-grid qr-actions">
         <button class="btn primary" id="captureQrBtn">Quét / Chụp QR</button>
         <label class="btn secondary upload-inline-btn">
           Tải ảnh QR
@@ -66,7 +72,7 @@
 
     <section class="card result-card">
       <div class="card-head">
-        <h2>2. Dữ liệu từ QR / hồ sơ</h2>
+        <h2>2. Dữ liệu hồ sơ</h2>
         <div class="camera-actions">
           <button id="copyJsonBtn" class="btn secondary">Copy JSON</button>
           <button id="copyResidenceBtn" class="btn secondary">Thường trú → Hiện tại</button>
@@ -90,7 +96,7 @@
 
     <section class="card image-card">
       <div class="card-head">
-        <h2>3. Chụp ảnh hồ sơ CCCD</h2>
+        <h2>3. Chụp mặt trước / mặt sau CCCD</h2>
         <button id="runFallbackOcrBtn" class="btn primary">OCR fallback</button>
       </div>
 
@@ -103,7 +109,7 @@
         </label>
       </div>
 
-      <div class="upload-grid preview-grid">
+      <div class="upload-grid preview-grid two-col">
         <label class="upload-tile compact">
           <span>Mặt trước</span>
           <img id="frontPreview" alt="Mặt trước">
@@ -115,7 +121,7 @@
       </div>
 
       <div class="note-box">
-        Ảnh mặt trước/mặt sau dùng để lưu hồ sơ và chỉ chạy OCR khi QR thất bại hoặc cần fallback.
+        Sau khi quét QR thành công, hệ thống chuyển sang bước chụp mặt trước/mặt sau. OCR fallback chỉ dùng khi QR thiếu hoặc lỗi.
       </div>
     </section>
 

@@ -40,6 +40,20 @@ h2 { margin: 0; font-size: 20px; }
 .btn.primary { background: linear-gradient(135deg, var(--primary), var(--primary-dark)); color: white; }
 .btn.secondary { background: white; border: 1px solid var(--border); }
 .camera-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+.step-indicator { display: flex; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
+.step-chip {
+  padding: 10px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: #fff;
+  color: var(--muted);
+  font-weight: 800;
+}
+.step-chip.active {
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  color: white;
+  border-color: transparent;
+}
 .camera-stage {
   position: relative;
   border-radius: 24px;
@@ -68,10 +82,7 @@ video {
   box-shadow: 0 0 0 9999px rgba(2,6,23,.34);
   transition: border-color .2s ease, box-shadow .2s ease, transform .2s ease;
 }
-.qr-frame {
-  width: min(72vw, 320px);
-  aspect-ratio: 1;
-}
+.qr-frame { width: min(72vw, 320px); aspect-ratio: 1; }
 .guide-frame.state-idle { border-color: rgba(255,255,255,0.55); }
 .guide-frame.state-warning { border-color: var(--warning); box-shadow: 0 0 0 9999px rgba(2,6,23,.28), 0 0 0 6px rgba(245,158,11,.15); }
 .guide-frame.state-ready { border-color: var(--success); box-shadow: 0 0 0 9999px rgba(2,6,23,.22), 0 0 0 8px rgba(16,185,129,.18); transform: scale(1.01); }
@@ -85,16 +96,12 @@ video {
 }
 .camera-status-box strong, .camera-status-box span { display: block; }
 .camera-status-box span { margin-top: 4px; font-size: 12px; color: rgba(255,255,255,.85); }
-.capture-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
-  margin-top: 12px;
-}
+.capture-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 12px; }
 .qr-actions { grid-template-columns: 1fr 1fr; }
 .upload-inline-btn { display: inline-flex; justify-content: center; align-items: center; }
 .upload-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
 .preview-grid { margin-top: 12px; }
+.two-col { grid-template-columns: repeat(2, 1fr); }
 .preview-single { margin-top: 12px; }
 .upload-tile {
   border: 2px dashed #cbd5e1; border-radius: 18px; padding: 14px; background: #fff; min-height: 280px;
@@ -126,7 +133,7 @@ pre { margin: 0; background: #0f172a; color: #e2e8f0; padding: 16px; border-radi
 @media (max-width: 860px) {
   .topbar, .card-head, .status-row { flex-direction: column; }
   .api-box { min-width: 100%; }
-  .upload-grid, .form-grid, .capture-grid, .qr-actions { grid-template-columns: 1fr; }
+  .upload-grid, .form-grid, .capture-grid, .qr-actions, .two-col { grid-template-columns: 1fr; }
   video { height: 52vh; }
   .qr-frame { width: min(80vw, 300px); }
 }

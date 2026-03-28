@@ -24,6 +24,11 @@ const els = {
   guideFrame: document.getElementById('guideFrame'),
   cameraStateLabel: document.getElementById('cameraStateLabel'),
   cameraStateHint: document.getElementById('cameraStateHint'),
+  stepTitle: document.getElementById('stepTitle'),
+  stepQr: document.getElementById('stepQr'),
+  stepImages: document.getElementById('stepImages'),
+  stepReview: document.getElementById('stepReview'),
+  qrActions: document.getElementById('qrActions'),
 };
 
 let latestResponse = null;
@@ -32,6 +37,8 @@ let stream = null;
 let useEnvironment = true;
 let frameCheckTimer = null;
 let lastQrFrameDataUrl = '';
+let currentStep = 'qr';
+let lastDecodeAt = 0;
 
 function setStatus(text, type='info') {
   els.statusBanner.className = `status ${type}`;
@@ -43,6 +50,24 @@ function setCameraState(state, label, hint) {
   els.guideFrame.classList.add(state);
   els.cameraStateLabel.textContent = label;
   els.cameraStateHint.textContent = hint;
+}
+
+function setStep(step) {
+  currentStep = step;
+  els.stepQr.classList.toggle('active', step === 'qr');
+  els.stepImages.classList.toggle('active', step === 'images');
+  els.stepReview.classList.toggle('active', step === 'review');
+
+  if (step === 'qr') {
+    els.stepTitle.textContent = '1. Quét QR CCCD';
+    els.qrActions.style.display = 'grid';
+  } else if (step === 'images') {
+    els.stepTitle.textContent = '2. Chụp mặt trước / mặt sau CCCD';
+    els.qrActions.style.display = 'none';
+  } else {
+    els.stepTitle.textContent = '3. Review dữ liệu hồ sơ';
+    els.qrActions.style.display = 'none';
+  }
 }
 
 async function startCamera() {
@@ -61,8 +86,13 @@ async function startCamera() {
       audio: false
     });
     els.video.srcObject = stream;
-    setCameraState('state-idle', 'Đã bật camera', 'Đưa mã QR CCCD vào trong khung vuông. Chỉ khi đọc được QR thật, khung mới chuyển xanh.');
-    startLiveQrDetection();
+
+    if (currentStep === 'qr') {
+      setCameraState('state-idle', 'Ưu tiên quét QR', 'Đưa mã QR CCCD vào trong khung. Hệ thống sẽ tự đọc và chuyển bước.');
+      startLiveQrDetection();
+    } else {
+      setCameraState('state-warning', 'Sẵn sàng chụp ảnh CCCD', 'Đưa CCCD vào khung rồi bấm chụp mặt trước hoặc mặt sau.');
+    }
   } catch (err) {
     console.error(err);
     setStatus('Không bật được camera.', 'error');
@@ -72,51 +102,64 @@ async function startCamera() {
 function startLiveQrDetection() {
   if (frameCheckTimer) clearInterval(frameCheckTimer);
   frameCheckTimer = setInterval(async () => {
+    if (currentStep !== 'qr') return;
     if (!els.video.videoWidth || !els.video.videoHeight) return;
+    const now = Date.now();
+    if (now - lastDecodeAt < 220) return;
+    lastDecodeAt = now;
 
-    const dataUrl = captureFrameDataUrl();
+    const dataUrl = captureFrameDataUrl(900);
     if (!dataUrl) return;
-
     const qrText = await decodeQrFromDataUrl(dataUrl);
+
     if (qrText) {
       latestQrText = qrText;
       lastQrFrameDataUrl = dataUrl;
-      setCameraState('state-ready', 'Đã đọc được QR', 'QR hợp lệ đã được nhận. Anh/chị có thể bấm Quét / Chụp QR để xác nhận.');
+      await finalizeQrSuccess();
       return;
     }
 
-    const quality = estimateQrVisualQuality(dataUrl);
+    const quality = estimateQrVisualQuality();
     if (quality === 'warning') {
-      setCameraState('state-warning', 'Đã thấy vùng QR nhưng chưa đọc được', 'Giữ chắc tay hơn, tránh lóa sáng, đưa QR gần hơn chút.');
+      setCameraState('state-warning', 'Đã thấy vùng QR nhưng chưa đọc được', 'Giữ chắc tay hơn, tránh lóa sáng, đưa gần hơn chút.');
     } else {
-      setCameraState('state-idle', 'Chưa đọc được QR', 'Đưa mã QR vào giữa khung vuông, đủ sáng và không rung.');
+      setCameraState('state-idle', 'Đang tìm mã QR', 'Đưa QR vào giữa khung. Hệ thống sẽ tự đọc khi đủ rõ.');
     }
-  }, 500);
+  }, 240);
 }
 
-function estimateQrVisualQuality(dataUrl) {
+async function finalizeQrSuccess() {
+  if (!latestQrText) return;
+  if (frameCheckTimer) clearInterval(frameCheckTimer);
+  els.qrPreview.src = lastQrFrameDataUrl;
+  parseQrText(latestQrText);
+  latestResponse = { qr_text: latestQrText, source: 'live-scan' };
+  els.debugOutput.textContent = JSON.stringify({ qr_text: latestQrText, source: 'live-scan' }, null, 2);
+  setCameraState('state-ready', 'Đã nhận QR thành công', 'Dữ liệu đã được điền vào form. Chuyển sang bước chụp mặt trước/mặt sau.');
+  setStatus('Đã đọc QR thành công và tự điền dữ liệu. Mời chụp mặt trước/mặt sau CCCD.', 'success');
+  setStep('images');
+}
+
+function estimateQrVisualQuality() {
   const canvas = els.captureCanvas;
   const ctx = canvas.getContext('2d', { willReadFrequently: true });
   canvas.width = 360;
   canvas.height = 360;
   ctx.drawImage(els.video, 0, 0, canvas.width, canvas.height);
   const { data, width, height } = ctx.getImageData(0, 0, canvas.width, canvas.height);
-
   let brightness = 0;
   let contrast = 0;
-  for (let i = 0; i < data.length; i += 4 * 12) {
+  for (let i = 0; i < data.length; i += 4 * 16) {
     brightness += data[i] * 0.299 + data[i + 1] * 0.587 + data[i + 2] * 0.114;
   }
-  for (let y = 2; y < height - 2; y += 6) {
-    for (let x = 2; x < width - 2; x += 6) {
+  for (let y = 2; y < height - 2; y += 8) {
+    for (let x = 2; x < width - 2; x += 8) {
       const idx = (y * width + x) * 4;
       contrast += Math.abs(data[idx] - data[idx + 4]) + Math.abs(data[idx] - data[idx + width * 4]);
     }
   }
-
-  const avgBrightness = brightness / (data.length / (4 * 12));
-  if (contrast > 35000 && avgBrightness > 60 && avgBrightness < 230) return 'warning';
-  return 'idle';
+  const avgBrightness = brightness / (data.length / (4 * 16));
+  return contrast > 28000 && avgBrightness > 60 && avgBrightness < 230 ? 'warning' : 'idle';
 }
 
 function dataUrlToFile(dataUrl, filename) {
@@ -129,14 +172,15 @@ function dataUrlToFile(dataUrl, filename) {
   return new File([u8arr], filename, { type: mime });
 }
 
-function captureFrameDataUrl() {
+function captureFrameDataUrl(maxWidth = 1400) {
   if (!els.video.videoWidth || !els.video.videoHeight) return '';
+  const scale = Math.min(1, maxWidth / els.video.videoWidth);
   const canvas = els.captureCanvas;
   const ctx = canvas.getContext('2d');
-  canvas.width = els.video.videoWidth;
-  canvas.height = els.video.videoHeight;
+  canvas.width = Math.round(els.video.videoWidth * scale);
+  canvas.height = Math.round(els.video.videoHeight * scale);
   ctx.drawImage(els.video, 0, 0, canvas.width, canvas.height);
-  return canvas.toDataURL('image/jpeg', 0.96);
+  return canvas.toDataURL('image/jpeg', 0.92);
 }
 
 function decodeQrFromDataUrl(dataUrl) {
@@ -144,10 +188,12 @@ function decodeQrFromDataUrl(dataUrl) {
     const img = new Image();
     img.onload = () => {
       const canvas = document.createElement('canvas');
-      canvas.width = img.width;
-      canvas.height = img.height;
+      const max = 900;
+      const scale = Math.min(1, max / img.width);
+      canvas.width = Math.round(img.width * scale);
+      canvas.height = Math.round(img.height * scale);
       const ctx = canvas.getContext('2d', { willReadFrequently: true });
-      ctx.drawImage(img, 0, 0);
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
       const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
       const result = window.jsQR(imageData.data, canvas.width, canvas.height);
       resolve(result?.data || '');
@@ -176,7 +222,6 @@ function parseQrText(raw) {
   if (!document.getElementById('current_address').value && mapping.place_of_residence) {
     document.getElementById('current_address').value = mapping.place_of_residence;
   }
-
   if (!document.getElementById('issue_place').value) {
     document.getElementById('issue_place').value = 'Cục Cảnh sát QLHC về TTXH';
   }
@@ -214,15 +259,12 @@ async function handleQrImage(dataUrl) {
   els.qrPreview.src = dataUrl;
   latestQrText = await decodeQrFromDataUrl(dataUrl);
   if (!latestQrText) {
-    setStatus('Chưa đọc được QR. Anh/chị có thể chụp lại hoặc dùng OCR fallback sau.', 'error');
+    setStatus('Chưa đọc được QR. Anh/chị có thể thử lại hoặc dùng OCR fallback sau.', 'error');
     setCameraState('state-warning', 'Chụp được ảnh nhưng chưa decode được QR', 'Thử lại với QR lớn hơn, nét hơn, ít lóa hơn.');
     return;
   }
-  parseQrText(latestQrText);
-  latestResponse = { qr_text: latestQrText };
-  els.debugOutput.textContent = JSON.stringify({ qr_text: latestQrText }, null, 2);
-  setStatus('Đã đọc QR và điền dữ liệu chính từ QR.', 'success');
-  setCameraState('state-ready', 'Đã xác nhận QR hợp lệ', 'Dữ liệu QR đã được điền vào form. Tiếp tục chụp mặt trước/mặt sau.');
+  lastQrFrameDataUrl = dataUrl;
+  await finalizeQrSuccess();
 }
 
 async function runFallbackOcr() {
@@ -253,6 +295,7 @@ async function runFallbackOcr() {
     fillForm(json.data || {});
     els.debugOutput.textContent = JSON.stringify(json, null, 2);
     setStatus('Đã chạy OCR fallback. Vui lòng review các field tô vàng.', 'success');
+    setStep('review');
   } catch (err) {
     console.error(err);
     setStatus('Không gọi được backend OCR fallback.', 'error');
@@ -266,10 +309,10 @@ els.switchCameraBtn.addEventListener('click', () => {
 });
 els.captureQrBtn.addEventListener('click', async () => {
   if (latestQrText && lastQrFrameDataUrl) {
-    await handleQrImage(lastQrFrameDataUrl);
+    await finalizeQrSuccess();
     return;
   }
-  const dataUrl = captureFrameDataUrl();
+  const dataUrl = captureFrameDataUrl(900);
   if (!dataUrl) {
     setStatus('Camera chưa sẵn sàng.', 'error');
     return;
@@ -300,6 +343,7 @@ els.multiImageInput.addEventListener('change', () => {
   if (files[0]) els.frontPreview.src = URL.createObjectURL(files[0]);
   if (files[1]) els.backPreview.src = URL.createObjectURL(files[1]);
   setStatus('Đã nạp ảnh mặt trước/mặt sau.', 'success');
+  setStep('images');
 });
 els.runFallbackOcrBtn.addEventListener('click', runFallbackOcr);
 els.copyJsonBtn.addEventListener('click', async () => {
@@ -313,3 +357,5 @@ els.copyResidenceBtn.addEventListener('click', () => {
   document.getElementById('current_address').value = residence;
   setStatus('Đã copy nơi thường trú sang địa chỉ hiện tại.', 'success');
 });
+
+setStep('qr');
