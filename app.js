@@ -380,7 +380,7 @@ async function saveRecord() {
     front_image_data_url: frontSrc,
     back_image_data_url: backSrc,
     qr_image_data_url: els.qrPreview.src || '',
-    generated_qr_image_data_url: generateQrDataUrlFromText(lastQrText),
+    generated_qr_image_data_url: '',
     data_source: 'qr_first',
   };
 
