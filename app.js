@@ -1,5 +1,5 @@
 const ids = [
-  'full_name','id_number','old_id_number','date_of_birth','gender','issue_date','expiry_date','issue_place','place_of_origin','place_of_residence','current_address'
+  'full_name','id_number','old_id_number','date_of_birth','gender','phone_number','occupation','issue_date','expiry_date','issue_place','place_of_origin','place_of_residence','current_address'
 ];
 
 const els = {
@@ -361,6 +361,8 @@ async function saveRecord() {
     old_id_number: document.getElementById('old_id_number').value.trim(),
     date_of_birth: document.getElementById('date_of_birth').value.trim(),
     gender: document.getElementById('gender').value.trim(),
+    phone_number: document.getElementById('phone_number').value.trim(),
+    occupation: document.getElementById('occupation').value.trim(),
     issue_date: document.getElementById('issue_date').value.trim(),
     expiry_date: document.getElementById('expiry_date').value.trim(),
     issue_place: document.getElementById('issue_place').value.trim(),
