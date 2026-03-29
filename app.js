@@ -3,6 +3,9 @@ const ids = [
 ];
 
 const els = {
+  apiBase: document.getElementById('apiBase'),
+  toggleConfigBtn: document.getElementById('toggleConfigBtn'),
+  configPanel: document.getElementById('configPanel'),
   qrInput: document.getElementById('qrInput'),
   frontPreview: document.getElementById('frontPreview'),
   backPreview: document.getElementById('backPreview'),
@@ -289,6 +292,10 @@ function generateQrDataUrlFromText(text) {
   return canvas.toDataURL('image/png');
 }
 
+function api(path) {
+  return `${els.apiBase.value.replace(/\/$/, '')}${path}`;
+}
+
 async function runFallbackOcr() {
   const frontSrc = els.frontPreview.src;
   const backSrc = els.backPreview.src;
@@ -302,7 +309,7 @@ async function runFallbackOcr() {
 
   setSaveStatus('Đang chạy OCR fallback...', 'info');
   try {
-    const res = await fetch('https://n8n.tail735c05.ts.net/api/cccd/recognize', { method: 'POST', body: formData });
+    const res = await fetch(api('/api/cccd/recognize'), { method: 'POST', body: formData });
     const json = await res.json();
     fillForm(json.data || {});
     els.debugOutput.textContent = JSON.stringify(json, null, 2);
@@ -379,18 +386,19 @@ async function saveRecord() {
 
   setSaveStatus('Đang lưu hồ sơ vào database local...', 'info');
   try {
-    const res = await fetch('https://n8n.tail735c05.ts.net/api/cccd/save-record', {
+    const res = await fetch(api('/api/cccd/save-record'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     });
     const json = await res.json();
-    els.debugOutput.textContent = JSON.stringify(json, null, 2);
-    if (!res.ok || !json.success) throw new Error(json?.detail || 'Lưu hồ sơ thất bại');
+    els.debugOutput.textContent = JSON.stringify({ save_request: payload, save_response: json }, null, 2);
+    if (!res.ok || !json.success) throw new Error(json?.detail || json?.message || 'Lưu hồ sơ thất bại');
     setSaveStatus(`Đã lưu hồ sơ thành công. Record ID: ${json.record_id}`, 'success');
   } catch (err) {
     console.error(err);
-    setSaveStatus('Không lưu được hồ sơ vào backend/database.', 'error');
+    els.debugOutput.textContent = JSON.stringify({ save_request: payload, error: String(err) }, null, 2);
+    setSaveStatus(`Không lưu được hồ sơ: ${String(err)}`, 'error');
   }
 }
 
@@ -441,6 +449,9 @@ els.copyResidenceBtn.addEventListener('click', () => {
   if (!residence) return setSaveStatus('Chưa có nơi thường trú để copy.', 'error');
   document.getElementById('current_address').value = residence;
   setSaveStatus('Đã copy nơi thường trú sang địa chỉ hiện tại.', 'success');
+});
+els.toggleConfigBtn.addEventListener('click', () => {
+  els.configPanel.style.display = els.configPanel.style.display === 'none' ? 'block' : 'none';
 });
 els.toggleDebugBtn.addEventListener('click', () => {
   debugOpen = !debugOpen;

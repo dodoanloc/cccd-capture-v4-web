@@ -37,6 +37,8 @@ body {
   gap: 10px;
   margin-bottom: 10px;
 }
+.config-panel { margin-bottom: 10px; }
+.config-panel input { width: 100%; padding: 12px 14px; border: 2px solid var(--border); border-radius: 14px; font: inherit; }
 .mini-label {
   font-size: 11px;
   font-weight: 800;
