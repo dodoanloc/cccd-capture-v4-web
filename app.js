@@ -40,6 +40,8 @@ let lastQrFrameDataUrl = '';
 let currentStep = 'qr';
 let lastScanAt = 0;
 let lastState = 'idle';
+let qrStableHits = 0;
+let lastQrCandidate = '';
 
 function setStatus(text, type='info') {
   els.statusBanner.className = `status ${type}`;
@@ -69,12 +71,15 @@ async function startCamera() {
     stopCamera();
     latestQrText = '';
     lastQrFrameDataUrl = '';
+    qrStableHits = 0;
+    lastQrCandidate = '';
 
     stream = await navigator.mediaDevices.getUserMedia({
       video: {
         facingMode: useEnvironment ? { ideal: 'environment' } : 'user',
         width: { ideal: 1280 },
-        height: { ideal: 720 }
+        height: { ideal: 720 },
+        frameRate: { ideal: 30, max: 30 }
       },
       audio: false
     });
@@ -82,7 +87,7 @@ async function startCamera() {
     await els.video.play();
 
     if (currentStep === 'qr') {
-      setCameraState('state-idle', 'Đưa QR vào khung', 'Hệ thống sẽ tự đọc khi QR hợp lệ.');
+      setCameraState('state-idle', 'Đưa QR vào khung', 'Hệ thống đang scan liên tục trong vùng khung.');
       startLiveQrDetection();
     } else {
       setCameraState('state-warning', 'Sẵn sàng chụp ảnh CCCD', 'Đưa CCCD vào khung rồi bấm chụp mặt trước hoặc mặt sau.');
@@ -110,19 +115,31 @@ function startLiveQrDetection() {
     }
 
     const now = performance.now();
-    if (now - lastScanAt > 90) {
+    if (now - lastScanAt > 55) {
       lastScanAt = now;
       const qr = await scanQrFromVideoROI();
       if (qr?.text) {
-        latestQrText = qr.text;
-        lastQrFrameDataUrl = qr.dataUrl;
-        await finalizeQrSuccess();
-        return;
-      }
-      if (qr?.visualHint) {
-        setCameraState('state-warning', 'Đã thấy QR nhưng chưa bắt được', 'Giữ QR ổn định hơn, gần hơn, tránh lóa.');
+        if (qr.text === lastQrCandidate) qrStableHits += 1;
+        else {
+          lastQrCandidate = qr.text;
+          qrStableHits = 1;
+        }
+
+        setCameraState('state-ready', 'Đã bắt được QR', 'Đang xác nhận dữ liệu QR...');
+        if (qrStableHits >= 1) {
+          latestQrText = qr.text;
+          lastQrFrameDataUrl = qr.dataUrl;
+          await finalizeQrSuccess();
+          return;
+        }
       } else {
-        setCameraState('state-idle', 'Đang tìm QR', 'Đưa mã QR vào giữa khung vuông.');
+        qrStableHits = 0;
+        lastQrCandidate = '';
+        if (qr?.visualHint) {
+          setCameraState('state-warning', 'Đã thấy QR nhưng chưa bắt được', 'Giữ QR ổn định hơn, gần hơn, tránh lóa.');
+        } else {
+          setCameraState('state-idle', 'Đang tìm QR', 'Đưa mã QR vào giữa khung vuông.');
+        }
       }
     }
     scanLoopId = requestAnimationFrame(scan);
@@ -139,10 +156,10 @@ async function scanQrFromVideoROI() {
   const vh = video.videoHeight;
   if (!vw || !vh) return null;
 
-  const roiSize = Math.round(Math.min(vw, vh) * 0.42);
+  const roiSize = Math.round(Math.min(vw, vh) * 0.34);
   const sx = Math.round((vw - roiSize) / 2);
   const sy = Math.round((vh - roiSize) / 2);
-  const target = 420;
+  const target = 300;
   canvas.width = target;
   canvas.height = target;
   ctx.drawImage(video, sx, sy, roiSize, roiSize, 0, 0, target, target);
@@ -152,20 +169,20 @@ async function scanQrFromVideoROI() {
   if (result?.data) {
     return {
       text: result.data,
-      dataUrl: canvas.toDataURL('image/jpeg', 0.9),
+      dataUrl: canvas.toDataURL('image/jpeg', 0.82),
       visualHint: true,
     };
   }
 
   let contrast = 0;
   const d = imageData.data;
-  for (let y = 2; y < target - 2; y += 8) {
-    for (let x = 2; x < target - 2; x += 8) {
+  for (let y = 2; y < target - 2; y += 10) {
+    for (let x = 2; x < target - 2; x += 10) {
       const idx = (y * target + x) * 4;
       contrast += Math.abs(d[idx] - d[idx + 4]) + Math.abs(d[idx] - d[idx + target * 4]);
     }
   }
-  return { text: '', dataUrl: '', visualHint: contrast > 20000 };
+  return { text: '', dataUrl: '', visualHint: contrast > 12000 };
 }
 
 async function finalizeQrSuccess() {
@@ -191,7 +208,7 @@ function dataUrlToFile(dataUrl, filename) {
   return new File([u8arr], filename, { type: mime });
 }
 
-function captureFullFrameDataUrl(maxWidth = 1400) {
+function captureFullFrameDataUrl(maxWidth = 1280) {
   if (!els.video.videoWidth || !els.video.videoHeight) return '';
   const scale = Math.min(1, maxWidth / els.video.videoWidth);
   const canvas = els.captureCanvas;
@@ -199,7 +216,7 @@ function captureFullFrameDataUrl(maxWidth = 1400) {
   canvas.width = Math.round(els.video.videoWidth * scale);
   canvas.height = Math.round(els.video.videoHeight * scale);
   ctx.drawImage(els.video, 0, 0, canvas.width, canvas.height);
-  return canvas.toDataURL('image/jpeg', 0.92);
+  return canvas.toDataURL('image/jpeg', 0.9);
 }
 
 function decodeQrFromDataUrl(dataUrl) {
@@ -207,7 +224,7 @@ function decodeQrFromDataUrl(dataUrl) {
     const img = new Image();
     img.onload = () => {
       const canvas = document.createElement('canvas');
-      const max = 700;
+      const max = 520;
       const scale = Math.min(1, max / img.width);
       canvas.width = Math.round(img.width * scale);
       canvas.height = Math.round(img.height * scale);
