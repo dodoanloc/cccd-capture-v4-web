@@ -10,111 +10,86 @@
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <div class="app-shell">
-    <section class="card camera-card compact-card">
-      <div class="top-row">
-        <div class="brand-block">
-          <p class="eyebrow">QR-FIRST</p>
-          <h1 id="stepTitle">Quét QR CCCD</h1>
+  <div class="mobile-shell">
+    <section class="camera-section">
+      <div class="camera-header">
+        <div>
+          <div class="mini-label">CCCD FLOW</div>
+          <h1 id="stepTitle">Quét QR</h1>
         </div>
-        <div class="tool-row">
-          <button id="startCameraBtn" class="icon-btn">Bật camera</button>
-          <button id="switchCameraBtn" class="icon-btn">Đổi camera</button>
-        </div>
+        <button id="switchCameraBtn" class="ghost-btn">Đổi camera</button>
       </div>
 
-      <div class="step-indicator">
+      <div class="stepper">
         <div id="stepQr" class="step-chip active">QR</div>
-        <div id="stepImages" class="step-chip">Ảnh CCCD</div>
+        <div id="stepFront" class="step-chip">Mặt trước</div>
+        <div id="stepBack" class="step-chip">Mặt sau</div>
         <div id="stepReview" class="step-chip">Review</div>
       </div>
 
-      <div class="camera-stage qr-stage">
+      <div class="camera-stage">
         <video id="video" autoplay playsinline muted></video>
         <canvas id="captureCanvas" hidden></canvas>
         <div class="camera-overlay">
           <div id="guideFrame" class="guide-frame qr-frame state-idle"></div>
-          <div class="camera-status-box">
+          <div class="camera-hint-box">
             <strong id="cameraStateLabel">Đưa QR vào khung</strong>
-            <span id="cameraStateHint">Hệ thống sẽ tự đọc khi QR hợp lệ.</span>
+            <span id="cameraStateHint">Tự nhận diện và chuyển bước khi thành công.</span>
           </div>
         </div>
       </div>
 
-      <div id="qrActions" class="action-row two-col">
-        <button class="primary-btn" id="captureQrBtn">Quét QR</button>
-        <label class="secondary-btn upload-inline-btn">
-          Tải ảnh QR
-          <input type="file" id="qrInput" accept="image/*" hidden>
-        </label>
+      <div class="camera-actions">
+        <button id="startCameraBtn" class="action-btn secondary">Bật camera</button>
+        <button id="captureActionBtn" class="action-btn primary">Quét QR</button>
       </div>
 
-      <div class="thumb-row single-thumb">
-        <div class="thumb-card">
-          <span>QR</span>
-          <img id="qrPreview" alt="QR CCCD">
-        </div>
+      <div class="preview-strip">
+        <div class="preview-pill"><span>QR</span><img id="qrPreview" alt="QR"></div>
+        <div class="preview-pill"><span>Trước</span><img id="frontPreview" alt="Mặt trước"></div>
+        <div class="preview-pill"><span>Sau</span><img id="backPreview" alt="Mặt sau"></div>
       </div>
 
-      <div id="statusBanner" class="status info">Bắt đầu bằng bước quét QR.</div>
+      <div id="statusBanner" class="status info">Bật camera để bắt đầu.</div>
     </section>
 
-    <section class="card compact-card">
-      <div class="section-head">
-        <h2>Dữ liệu hồ sơ</h2>
-        <div class="mini-actions">
-          <button id="copyJsonBtn" class="text-btn">Copy JSON</button>
-          <button id="copyResidenceBtn" class="text-btn">Thường trú → Hiện tại</button>
-        </div>
+    <section class="review-section">
+      <div class="review-head">
+        <h2>Xác nhận thông tin</h2>
+        <button id="copyResidenceBtn" class="text-btn">Thường trú → Hiện tại</button>
       </div>
 
-      <div class="form-grid">
-        <div class="field full"><input id="full_name" placeholder="Họ và tên"></div>
-        <div class="field"><input id="id_number" placeholder="Số CCCD"></div>
-        <div class="field"><input id="old_id_number" placeholder="Số CMND cũ"></div>
-        <div class="field"><input id="date_of_birth" placeholder="Ngày sinh"></div>
-        <div class="field"><input id="gender" placeholder="Giới tính"></div>
-        <div class="field"><input id="issue_date" placeholder="Ngày cấp"></div>
-        <div class="field"><input id="expiry_date" placeholder="Ngày hết hạn"></div>
-        <div class="field full"><input id="issue_place" placeholder="Nơi cấp"></div>
-        <div class="field full"><textarea id="place_of_origin" rows="2" placeholder="Quê quán"></textarea></div>
-        <div class="field full"><textarea id="place_of_residence" rows="3" placeholder="Nơi thường trú"></textarea></div>
-        <div class="field full"><textarea id="current_address" rows="3" placeholder="Địa chỉ hiện tại"></textarea></div>
+      <div class="form-stack">
+        <input id="full_name" placeholder="Họ và tên">
+        <div class="two-col">
+          <input id="id_number" placeholder="Số CCCD">
+          <input id="old_id_number" placeholder="Số CMND cũ">
+        </div>
+        <div class="two-col">
+          <input id="date_of_birth" placeholder="Ngày sinh">
+          <input id="gender" placeholder="Giới tính">
+        </div>
+        <div class="two-col">
+          <input id="issue_date" placeholder="Ngày cấp">
+          <input id="expiry_date" placeholder="Ngày hết hạn">
+        </div>
+        <input id="issue_place" placeholder="Nơi cấp">
+        <textarea id="place_of_origin" rows="2" placeholder="Quê quán"></textarea>
+        <textarea id="place_of_residence" rows="3" placeholder="Nơi thường trú"></textarea>
+        <textarea id="current_address" rows="3" placeholder="Địa chỉ hiện tại"></textarea>
       </div>
+
+      <div class="review-actions">
+        <button id="runFallbackOcrBtn" class="action-btn secondary">OCR fallback</button>
+        <button id="saveBtn" class="action-btn primary">Lưu</button>
+      </div>
+
+      <div id="saveStatus" class="status info">Sau khi chụp đủ ảnh, bấm Lưu để ghi hồ sơ.</div>
     </section>
 
-    <section class="card compact-card">
-      <div class="section-head">
-        <h2>Ảnh CCCD</h2>
-        <button id="runFallbackOcrBtn" class="primary-btn">OCR fallback</button>
-      </div>
-
-      <div class="action-row three-col">
-        <button class="primary-btn" id="captureFrontBtn">Mặt trước</button>
-        <button class="primary-btn" id="captureBackBtn">Mặt sau</button>
-        <label class="secondary-btn upload-inline-btn">
-          Tải ảnh
-          <input type="file" id="multiImageInput" accept="image/*" multiple hidden>
-        </label>
-      </div>
-
-      <div class="thumb-row two-thumbs">
-        <div class="thumb-card">
-          <span>Mặt trước</span>
-          <img id="frontPreview" alt="Mặt trước">
-        </div>
-        <div class="thumb-card">
-          <span>Mặt sau</span>
-          <img id="backPreview" alt="Mặt sau">
-        </div>
-      </div>
-    </section>
-
-    <section class="card compact-card debug-card">
-      <div class="section-head">
-        <h2>Debug</h2>
-      </div>
-      <pre id="debugOutput">Chưa có dữ liệu debug.</pre>
+    <section class="debug-section">
+      <button id="toggleDebugBtn" class="text-btn block">Hiện / Ẩn debug</button>
+      <pre id="debugOutput" class="debug-box">Chưa có dữ liệu debug.</pre>
     </section>
   </div>
   <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
