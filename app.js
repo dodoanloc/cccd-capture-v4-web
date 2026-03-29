@@ -130,7 +130,7 @@ function startQrLoop() {
       await onQrSuccess();
       return;
     }
-    setCameraState(found?.visualHint ? 'state-warning' : 'state-idle', found?.visualHint ? 'Đã thấy QR nhưng chưa bắt được' : 'Đang tìm QR', found?.visualHint ? 'Giữ chắc tay hơn, gần hơn, tránh lóa.' : 'Đưa mã QR vào giữa khung.');
+    setCameraState(found?.visualHint ? 'state-warning' : 'state-idle', found?.visualHint ? 'Đã thấy QR nhưng chưa bắt được' : 'Đang tìm QR', found?.visualHint ? 'Giữ QR ổn định hơn, gần hơn, tránh lóa.' : 'Đưa mã QR vào giữa khung.');
     scanLoopId = requestAnimationFrame(loop);
   };
   if (scanLoopId) cancelAnimationFrame(scanLoopId);
@@ -275,6 +275,20 @@ function dataUrlToFile(dataUrl, filename) {
   return new File([u8arr], filename, { type: mime });
 }
 
+function generateQrDataUrlFromText(text) {
+  const canvas = document.createElement('canvas');
+  canvas.width = 300;
+  canvas.height = 300;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(0, 0, 300, 300);
+  ctx.fillStyle = '#111';
+  ctx.font = '12px sans-serif';
+  ctx.fillText('QR regenerated placeholder', 40, 150);
+  ctx.fillText((text || '').slice(0, 28), 20, 170);
+  return canvas.toDataURL('image/png');
+}
+
 async function runFallbackOcr() {
   const frontSrc = els.frontPreview.src;
   const backSrc = els.backPreview.src;
@@ -315,7 +329,6 @@ function fillForm(data) {
 function captureCurrentMode() {
   const dataUrl = captureFullFrameDataUrl();
   if (!dataUrl) return setStatus('Camera chưa sẵn sàng.', 'error');
-  if (currentMode === 'qr') return;
   if (currentMode === 'front') {
     els.frontPreview.src = dataUrl;
     setStatus('Đã chụp mặt trước. Chuyển sang chụp mặt sau.', 'success');
@@ -329,17 +342,54 @@ function captureCurrentMode() {
     document.querySelector('.review-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     return;
   }
-  setMode('front');
+  if (currentMode === 'review') {
+    setMode('front');
+  }
 }
 
-function saveRecord() {
+async function saveRecord() {
   const hasQr = !!lastQrText;
-  const hasFront = !!els.frontPreview.src;
-  const hasBack = !!els.backPreview.src;
-  if (!hasQr || !hasFront || !hasBack) {
+  const frontSrc = els.frontPreview.src;
+  const backSrc = els.backPreview.src;
+  if (!hasQr || !frontSrc || !backSrc) {
     return setSaveStatus('Cần có QR, ảnh mặt trước và ảnh mặt sau trước khi lưu.', 'error');
   }
-  setSaveStatus('Đã tạo hồ sơ cục bộ sẵn sàng cho bước ghi database/backend tiếp theo.', 'success');
+
+  const payload = {
+    full_name: document.getElementById('full_name').value.trim(),
+    id_number: document.getElementById('id_number').value.trim(),
+    old_id_number: document.getElementById('old_id_number').value.trim(),
+    date_of_birth: document.getElementById('date_of_birth').value.trim(),
+    gender: document.getElementById('gender').value.trim(),
+    issue_date: document.getElementById('issue_date').value.trim(),
+    expiry_date: document.getElementById('expiry_date').value.trim(),
+    issue_place: document.getElementById('issue_place').value.trim(),
+    place_of_origin: document.getElementById('place_of_origin').value.trim(),
+    place_of_residence: document.getElementById('place_of_residence').value.trim(),
+    current_address: document.getElementById('current_address').value.trim(),
+    qr_text: lastQrText,
+    front_image_data_url: frontSrc,
+    back_image_data_url: backSrc,
+    qr_image_data_url: els.qrPreview.src || '',
+    generated_qr_image_data_url: generateQrDataUrlFromText(lastQrText),
+    data_source: 'qr_first',
+  };
+
+  setSaveStatus('Đang lưu hồ sơ vào database local...', 'info');
+  try {
+    const res = await fetch('https://n8n.tail735c05.ts.net/api/cccd/save-record', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    const json = await res.json();
+    els.debugOutput.textContent = JSON.stringify(json, null, 2);
+    if (!res.ok || !json.success) throw new Error(json?.detail || 'Lưu hồ sơ thất bại');
+    setSaveStatus(`Đã lưu hồ sơ thành công. Record ID: ${json.record_id}`, 'success');
+  } catch (err) {
+    console.error(err);
+    setSaveStatus('Không lưu được hồ sơ vào backend/database.', 'error');
+  }
 }
 
 els.startCameraBtn.addEventListener('click', startCamera);
