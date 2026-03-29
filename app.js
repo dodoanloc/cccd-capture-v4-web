@@ -87,7 +87,7 @@ async function startCamera() {
     await els.video.play();
 
     if (currentStep === 'qr') {
-      setCameraState('state-idle', 'Đưa QR vào khung', 'Hệ thống đang scan liên tục trong vùng khung.');
+      setCameraState('state-idle', 'Đưa QR vào khung', 'Hệ thống đang scan nhiều biến thể trong vùng khung.');
       startLiveQrDetection();
     } else {
       setCameraState('state-warning', 'Sẵn sàng chụp ảnh CCCD', 'Đưa CCCD vào khung rồi bấm chụp mặt trước hoặc mặt sau.');
@@ -115,7 +115,7 @@ function startLiveQrDetection() {
     }
 
     const now = performance.now();
-    if (now - lastScanAt > 55) {
+    if (now - lastScanAt > 45) {
       lastScanAt = now;
       const qr = await scanQrFromVideoROI();
       if (qr?.text) {
@@ -148,6 +148,31 @@ function startLiveQrDetection() {
   scanLoopId = requestAnimationFrame(scan);
 }
 
+function tryDecodeVariants(ctx, baseCanvas, passes) {
+  for (const pass of passes) {
+    const imageData = ctx.getImageData(0, 0, baseCanvas.width, baseCanvas.height);
+    const data = imageData.data;
+
+    if (pass.mode === 'threshold') {
+      for (let i = 0; i < data.length; i += 4) {
+        const gray = data[i] * 0.299 + data[i + 1] * 0.587 + data[i + 2] * 0.114;
+        const v = gray > pass.threshold ? 255 : 0;
+        data[i] = data[i + 1] = data[i + 2] = v;
+      }
+    } else if (pass.mode === 'contrast') {
+      for (let i = 0; i < data.length; i += 4) {
+        const gray = data[i] * 0.299 + data[i + 1] * 0.587 + data[i + 2] * 0.114;
+        const v = gray > 180 ? 255 : gray < 70 ? 0 : gray;
+        data[i] = data[i + 1] = data[i + 2] = v;
+      }
+    }
+
+    const result = window.jsQR(data, baseCanvas.width, baseCanvas.height);
+    if (result?.data) return result.data;
+  }
+  return '';
+}
+
 async function scanQrFromVideoROI() {
   const video = els.video;
   const canvas = els.captureCanvas;
@@ -156,33 +181,49 @@ async function scanQrFromVideoROI() {
   const vh = video.videoHeight;
   if (!vw || !vh) return null;
 
-  const roiSize = Math.round(Math.min(vw, vh) * 0.34);
-  const sx = Math.round((vw - roiSize) / 2);
-  const sy = Math.round((vh - roiSize) / 2);
-  const target = 300;
-  canvas.width = target;
-  canvas.height = target;
-  ctx.drawImage(video, sx, sy, roiSize, roiSize, 0, 0, target, target);
+  const roiRatios = [0.34, 0.42, 0.5];
+  const scales = [260, 340, 420];
+  const passes = [
+    { mode: 'raw' },
+    { mode: 'threshold', threshold: 135 },
+    { mode: 'threshold', threshold: 155 },
+    { mode: 'contrast' },
+  ];
 
-  const imageData = ctx.getImageData(0, 0, target, target);
-  const result = window.jsQR(imageData.data, target, target);
-  if (result?.data) {
-    return {
-      text: result.data,
-      dataUrl: canvas.toDataURL('image/jpeg', 0.82),
-      visualHint: true,
-    };
-  }
+  for (const roiRatio of roiRatios) {
+    const roiSize = Math.round(Math.min(vw, vh) * roiRatio);
+    const sx = Math.round((vw - roiSize) / 2);
+    const sy = Math.round((vh - roiSize) / 2);
 
-  let contrast = 0;
-  const d = imageData.data;
-  for (let y = 2; y < target - 2; y += 10) {
-    for (let x = 2; x < target - 2; x += 10) {
-      const idx = (y * target + x) * 4;
-      contrast += Math.abs(d[idx] - d[idx + 4]) + Math.abs(d[idx] - d[idx + target * 4]);
+    for (const target of scales) {
+      canvas.width = target;
+      canvas.height = target;
+      ctx.drawImage(video, sx, sy, roiSize, roiSize, 0, 0, target, target);
+      const decoded = tryDecodeVariants(ctx, canvas, passes);
+      if (decoded) {
+        return {
+          text: decoded,
+          dataUrl: canvas.toDataURL('image/jpeg', 0.8),
+          visualHint: true,
+        };
+      }
     }
   }
-  return { text: '', dataUrl: '', visualHint: contrast > 12000 };
+
+  canvas.width = 260;
+  canvas.height = 260;
+  const fallbackRoi = Math.round(Math.min(vw, vh) * 0.42);
+  ctx.drawImage(video, Math.round((vw - fallbackRoi) / 2), Math.round((vh - fallbackRoi) / 2), fallbackRoi, fallbackRoi, 0, 0, 260, 260);
+  const imageData = ctx.getImageData(0, 0, 260, 260);
+  let contrast = 0;
+  const d = imageData.data;
+  for (let y = 2; y < 258; y += 12) {
+    for (let x = 2; x < 258; x += 12) {
+      const idx = (y * 260 + x) * 4;
+      contrast += Math.abs(d[idx] - d[idx + 4]) + Math.abs(d[idx] - d[idx + 260 * 4]);
+    }
+  }
+  return { text: '', dataUrl: '', visualHint: contrast > 9000 };
 }
 
 async function finalizeQrSuccess() {
@@ -224,15 +265,19 @@ function decodeQrFromDataUrl(dataUrl) {
     const img = new Image();
     img.onload = () => {
       const canvas = document.createElement('canvas');
-      const max = 520;
+      const max = 560;
       const scale = Math.min(1, max / img.width);
       canvas.width = Math.round(img.width * scale);
       canvas.height = Math.round(img.height * scale);
       const ctx = canvas.getContext('2d', { willReadFrequently: true });
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-      const result = window.jsQR(imageData.data, canvas.width, canvas.height);
-      resolve(result?.data || '');
+      const decoded = tryDecodeVariants(ctx, canvas, [
+        { mode: 'raw' },
+        { mode: 'threshold', threshold: 140 },
+        { mode: 'threshold', threshold: 160 },
+        { mode: 'contrast' },
+      ]);
+      resolve(decoded || '');
     };
     img.src = dataUrl;
   });
