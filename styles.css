@@ -199,6 +199,12 @@ input, textarea, select {
 select {
   line-height: 1.2;
 }
+.occupation-select {
+  min-height: 56px;
+  padding-top: 15px;
+  padding-bottom: 15px;
+  font-weight: 600;
+}
 .review-actions {
   display: grid;
   grid-template-columns: 1fr 1fr;
