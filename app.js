@@ -458,9 +458,6 @@ async function saveRecord() {
   formData.append('data_source', 'qr_first');
   formData.append('front_image', dataUrlToFile(frontSrc, 'front.jpg'));
   formData.append('back_image', dataUrlToFile(backSrc, 'back.jpg'));
-  if (els.qrPreview.src?.startsWith('data:')) {
-    formData.append('qr_image', dataUrlToFile(els.qrPreview.src, 'qr.jpg'));
-  }
 
   els.saveBtn.disabled = true;
   setSaveStatus('Đang lưu hồ sơ vào database local...', 'info');
