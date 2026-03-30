@@ -78,13 +78,19 @@ function applyAuthState() {
   const saved = localStorage.getItem('cccd_current_user');
   currentUser = saved ? JSON.parse(saved) : null;
   const loggedIn = !!currentUser;
-  els.authSection.classList.toggle('hidden', loggedIn);
-  els.userBar.classList.toggle('hidden', !loggedIn);
-  els.cameraSection.classList.toggle('hidden', !loggedIn);
-  els.reviewSection.classList.toggle('hidden', !loggedIn);
   if (loggedIn) {
+    els.authSection.classList.add('hidden');
+    els.userBar.classList.remove('hidden');
+    els.cameraSection.classList.remove('hidden');
+    els.reviewSection.classList.remove('hidden');
     els.currentUserLabel.textContent = `Đang đăng nhập: ${currentUser.username}${currentUser.role === 'admin' ? ' (admin)' : ''}`;
     els.adminPanel.classList.toggle('hidden', currentUser.role !== 'admin');
+  } else {
+    els.authSection.classList.remove('hidden');
+    els.userBar.classList.add('hidden');
+    els.cameraSection.classList.add('hidden');
+    els.reviewSection.classList.add('hidden');
+    els.adminPanel.classList.add('hidden');
   }
 }
 

@@ -28,6 +28,7 @@ body {
   border-radius: 22px;
   box-shadow: 0 10px 24px rgba(15,23,42,.05);
 }
+#userBar.hidden, #cameraSection.hidden, #reviewSection.hidden, #authSection.hidden { display:none !important; }
 .hidden { display: none !important; }
 .preview-strip.hidden { display: none !important; }
 .camera-section, .review-section { padding: 12px; }
