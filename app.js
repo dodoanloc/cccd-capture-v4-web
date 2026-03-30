@@ -8,6 +8,10 @@ const els = {
   configPanel: document.getElementById('configPanel'),
   cameraSection: document.getElementById('cameraSection'),
   reviewSection: document.getElementById('reviewSection'),
+  saveOverlay: document.getElementById('saveOverlay'),
+  saveOverlayCard: document.getElementById('saveOverlayCard'),
+  saveOverlayTitle: document.getElementById('saveOverlayTitle'),
+  saveOverlayText: document.getElementById('saveOverlayText'),
   qrInput: document.getElementById('qrInput'),
   frontPreview: document.getElementById('frontPreview'),
   backPreview: document.getElementById('backPreview'),
@@ -51,6 +55,17 @@ function setStatus(text, type='info') {
 function setSaveStatus(text, type='info') {
   els.saveStatus.className = `status ${type}`;
   els.saveStatus.textContent = text;
+}
+
+function showSaveOverlay(title, text, type='info') {
+  els.saveOverlayCard.className = `save-overlay-card ${type}`;
+  els.saveOverlayTitle.textContent = title;
+  els.saveOverlayText.textContent = text;
+  els.saveOverlay.classList.remove('hidden');
+}
+
+function hideSaveOverlay() {
+  els.saveOverlay.classList.add('hidden');
 }
 
 function setCameraState(state, label, hint) {
@@ -404,7 +419,9 @@ async function saveRecord() {
     formData.append('qr_image', dataUrlToFile(els.qrPreview.src, 'qr.jpg'));
   }
 
+  els.saveBtn.disabled = true;
   setSaveStatus('Đang lưu hồ sơ vào database local...', 'info');
+  showSaveOverlay('Đang lưu hồ sơ…', 'Vui lòng chờ trong giây lát.', 'info');
   try {
     const res = await fetch(api('/api/cccd/save-record'), {
       method: 'POST',
@@ -415,10 +432,15 @@ async function saveRecord() {
     if (!res.ok || !json.success) throw new Error(json?.detail || json?.message || 'Lưu hồ sơ thất bại');
     setSaveStatus(`Đã lưu hồ sơ thành công. Record ID: ${json.record_id}`, 'success');
     setStatus('Đã lưu hồ sơ thành công.', 'success');
+    showSaveOverlay('Lưu thành công', `Record ID: ${json.record_id}`, 'success');
+    setTimeout(hideSaveOverlay, 2200);
   } catch (err) {
     console.error(err);
     els.debugOutput.textContent = JSON.stringify({ error: String(err) }, null, 2);
     setSaveStatus(`Không lưu được hồ sơ: ${String(err)}`, 'error');
+    showSaveOverlay('Lưu thất bại', String(err), 'error');
+  } finally {
+    els.saveBtn.disabled = false;
   }
 }
 
