@@ -475,6 +475,7 @@ els.toggleConfigBtn.addEventListener('click', () => {
 });
 els.newRecordBtn.addEventListener('click', resetRecordFlow);
 els.saveBtn.addEventListener('click', saveRecord);
+window.resetRecordFlow = resetRecordFlow;
 window.saveRecord = saveRecord;
 
 setMode('qr');
