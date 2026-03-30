@@ -375,47 +375,46 @@ async function saveRecord() {
   const hasQr = !!lastQrText;
   const frontSrc = els.frontPreview.src;
   const backSrc = els.backPreview.src;
-  if (!hasQr || !frontSrc || !backSrc) {
+  if (!hasQr || !frontSrc || !backSrc || !frontSrc.startsWith('data:') || !backSrc.startsWith('data:')) {
     return setSaveStatus('Cần có QR, ảnh mặt trước và ảnh mặt sau trước khi lưu.', 'error');
   }
 
-  const payload = {
-    full_name: document.getElementById('full_name').value.trim(),
-    id_number: document.getElementById('id_number').value.trim(),
-    old_id_number: document.getElementById('old_id_number').value.trim(),
-    date_of_birth: document.getElementById('date_of_birth').value.trim(),
-    gender: document.getElementById('gender').value.trim(),
-    phone_number: document.getElementById('phone_number').value.trim(),
-    occupation: document.getElementById('occupation').value.trim(),
-    issue_date: document.getElementById('issue_date').value.trim(),
-    expiry_date: document.getElementById('expiry_date').value.trim(),
-    issue_place: document.getElementById('issue_place').value.trim(),
-    place_of_origin: document.getElementById('place_of_origin').value.trim(),
-    place_of_residence: document.getElementById('place_of_residence').value.trim(),
-    current_address: document.getElementById('current_address').value.trim(),
-    qr_text: lastQrText,
-    front_image_data_url: frontSrc,
-    back_image_data_url: backSrc,
-    qr_image_data_url: els.qrPreview.src || '',
-    generated_qr_image_data_url: '',
-    data_source: 'qr_first',
-  };
+  const formData = new FormData();
+  formData.append('full_name', document.getElementById('full_name').value.trim());
+  formData.append('id_number', document.getElementById('id_number').value.trim());
+  formData.append('old_id_number', document.getElementById('old_id_number').value.trim());
+  formData.append('date_of_birth', document.getElementById('date_of_birth').value.trim());
+  formData.append('gender', document.getElementById('gender').value.trim());
+  formData.append('phone_number', document.getElementById('phone_number').value.trim());
+  formData.append('occupation', document.getElementById('occupation').value.trim());
+  formData.append('issue_date', document.getElementById('issue_date').value.trim());
+  formData.append('expiry_date', document.getElementById('expiry_date').value.trim());
+  formData.append('issue_place', document.getElementById('issue_place').value.trim());
+  formData.append('place_of_origin', document.getElementById('place_of_origin').value.trim());
+  formData.append('place_of_residence', document.getElementById('place_of_residence').value.trim());
+  formData.append('current_address', document.getElementById('current_address').value.trim());
+  formData.append('qr_text', lastQrText);
+  formData.append('data_source', 'qr_first');
+  formData.append('front_image', dataUrlToFile(frontSrc, 'front.jpg'));
+  formData.append('back_image', dataUrlToFile(backSrc, 'back.jpg'));
+  if (els.qrPreview.src?.startsWith('data:')) {
+    formData.append('qr_image', dataUrlToFile(els.qrPreview.src, 'qr.jpg'));
+  }
 
   setSaveStatus('Đang lưu hồ sơ vào database local...', 'info');
   try {
     const res = await fetch(api('/api/cccd/save-record'), {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
+      body: formData,
     });
     const json = await res.json();
-    els.debugOutput.textContent = JSON.stringify({ save_request: payload, save_response: json }, null, 2);
+    els.debugOutput.textContent = JSON.stringify({ save_response: json }, null, 2);
     if (!res.ok || !json.success) throw new Error(json?.detail || json?.message || 'Lưu hồ sơ thất bại');
     setSaveStatus(`Đã lưu hồ sơ thành công. Record ID: ${json.record_id}`, 'success');
     setStatus('Đã lưu hồ sơ thành công.', 'success');
   } catch (err) {
     console.error(err);
-    els.debugOutput.textContent = JSON.stringify({ save_request: payload, error: String(err) }, null, 2);
+    els.debugOutput.textContent = JSON.stringify({ error: String(err) }, null, 2);
     setSaveStatus(`Không lưu được hồ sơ: ${String(err)}`, 'error');
   }
 }
