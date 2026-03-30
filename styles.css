@@ -187,11 +187,17 @@ video {
 .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 input, textarea, select {
   width: 100%;
+  min-height: 52px;
   padding: 14px 14px;
   border: 2px solid var(--border);
   border-radius: 14px;
   font: inherit;
   background: white;
+  appearance: none;
+  -webkit-appearance: none;
+}
+select {
+  line-height: 1.2;
 }
 .review-actions {
   display: grid;
