@@ -357,6 +357,7 @@ function maybeCompleteCaptureFlow() {
   if (hasQr && hasFront && hasBack) {
     setMode('review');
     els.cameraSection.classList.add('hidden');
+    document.querySelector('.preview-strip')?.classList.add('hidden');
     els.reviewSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
     setStatus('Đã đủ QR và 2 ảnh CCCD. Vui lòng xác nhận thông tin và bấm Lưu.', 'success');
     setSaveStatus('Sẵn sàng lưu hồ sơ.', 'success');
@@ -399,6 +400,7 @@ function resetRecordFlow() {
   els.qrPreview.src = '';
   els.frontPreview.src = '';
   els.backPreview.src = '';
+  document.querySelector('.preview-strip')?.classList.remove('hidden');
   hideSaveOverlay();
   els.cameraSection.classList.remove('hidden');
   setMode('qr');

@@ -29,6 +29,7 @@ body {
   box-shadow: 0 10px 24px rgba(15,23,42,.05);
 }
 .hidden { display: none !important; }
+.preview-strip.hidden { display: none !important; }
 .camera-section, .review-section { padding: 12px; }
 .debug-section { padding: 10px 12px; }
 .camera-header, .review-head {
