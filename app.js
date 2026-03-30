@@ -3,6 +3,20 @@ const ids = [
 ];
 
 const els = {
+  authSection: document.getElementById('authSection'),
+  loginUsername: document.getElementById('loginUsername'),
+  loginPassword: document.getElementById('loginPassword'),
+  loginBtn: document.getElementById('loginBtn'),
+  loginStatus: document.getElementById('loginStatus'),
+  userBar: document.getElementById('userBar'),
+  currentUserLabel: document.getElementById('currentUserLabel'),
+  logoutBtn: document.getElementById('logoutBtn'),
+  adminPanel: document.getElementById('adminPanel'),
+  newUsername: document.getElementById('newUsername'),
+  newPassword: document.getElementById('newPassword'),
+  newFullName: document.getElementById('newFullName'),
+  createUserBtn: document.getElementById('createUserBtn'),
+  adminStatus: document.getElementById('adminStatus'),
   apiBase: document.getElementById('apiBase'),
   toggleConfigBtn: document.getElementById('toggleConfigBtn'),
   configPanel: document.getElementById('configPanel'),
@@ -43,10 +57,35 @@ let lastQrFrameDataUrl = '';
 let useEnvironment = true;
 let debugOpen = false;
 let isSaving = false;
+let currentUser = null;
 
 function setStatus(text, type='info') {
   els.statusBanner.className = `status ${type}`;
   els.statusBanner.textContent = text;
+}
+
+function setLoginStatus(text, type='info') {
+  els.loginStatus.className = `status ${type}`;
+  els.loginStatus.textContent = text;
+}
+
+function setAdminStatus(text, type='info') {
+  els.adminStatus.className = `status ${type}`;
+  els.adminStatus.textContent = text;
+}
+
+function applyAuthState() {
+  const saved = localStorage.getItem('cccd_current_user');
+  currentUser = saved ? JSON.parse(saved) : null;
+  const loggedIn = !!currentUser;
+  els.authSection.classList.toggle('hidden', loggedIn);
+  els.userBar.classList.toggle('hidden', !loggedIn);
+  els.cameraSection.classList.toggle('hidden', !loggedIn);
+  els.reviewSection.classList.toggle('hidden', !loggedIn);
+  if (loggedIn) {
+    els.currentUserLabel.textContent = `Đang đăng nhập: ${currentUser.username}${currentUser.role === 'admin' ? ' (admin)' : ''}`;
+    els.adminPanel.classList.toggle('hidden', currentUser.role !== 'admin');
+  }
 }
 
 function setSaveStatus(text, type='info') {
@@ -438,6 +477,7 @@ async function saveRecord() {
   formData.append('current_address', document.getElementById('current_address').value.trim());
   formData.append('qr_text', lastQrText);
   formData.append('data_source', 'qr_first');
+  formData.append('created_by', currentUser?.username || '');
   formData.append('front_image', dataUrlToFile(frontSrc, 'front.jpg'));
   formData.append('back_image', dataUrlToFile(backSrc, 'back.jpg'));
 
@@ -480,6 +520,61 @@ async function saveRecord() {
   }
 }
 
+async function login() {
+  try {
+    const res = await fetch(api('/api/auth/login'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: els.loginUsername.value.trim(), password: els.loginPassword.value })
+    });
+    const json = await res.json();
+    if (!res.ok || !json.success) throw new Error(json?.detail || 'Đăng nhập thất bại');
+    localStorage.setItem('cccd_current_user', JSON.stringify(json.user));
+    applyAuthState();
+    setLoginStatus('Đăng nhập thành công.', 'success');
+    startCamera();
+  } catch (err) {
+    setLoginStatus(String(err), 'error');
+  }
+}
+
+function logout() {
+  localStorage.removeItem('cccd_current_user');
+  currentUser = null;
+  stopCamera();
+  applyAuthState();
+  setLoginStatus('Đã đăng xuất.', 'info');
+}
+
+async function createUser() {
+  try {
+    const adminPassword = prompt('Nhập lại mật khẩu admin để tạo user:') || '';
+    const res = await fetch(api('/api/auth/users'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        admin_username: currentUser?.username || '',
+        admin_password: adminPassword,
+        username: els.newUsername.value.trim(),
+        password: els.newPassword.value,
+        full_name: els.newFullName.value.trim(),
+        role: 'user'
+      })
+    });
+    const json = await res.json();
+    if (!res.ok || !json.success) throw new Error(json?.detail || 'Tạo user thất bại');
+    setAdminStatus(`Đã tạo user: ${json.username}`, 'success');
+    els.newUsername.value = '';
+    els.newPassword.value = '';
+    els.newFullName.value = '';
+  } catch (err) {
+    setAdminStatus(String(err), 'error');
+  }
+}
+
+els.loginBtn.addEventListener('click', login);
+els.logoutBtn.addEventListener('click', logout);
+els.createUserBtn.addEventListener('click', createUser);
 els.startCameraBtn.addEventListener('click', startCamera);
 els.switchCameraBtn.addEventListener('click', () => {
   useEnvironment = !useEnvironment;
@@ -495,4 +590,5 @@ window.resetRecordFlow = resetRecordFlow;
 window.saveRecord = saveRecord;
 
 setMode('qr');
-startCamera();
+applyAuthState();
+if (currentUser) startCamera();

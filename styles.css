@@ -205,6 +205,7 @@ select {
   padding-bottom: 15px;
   font-weight: 600;
 }
+#userBar .review-head { margin-bottom: 0; }
 .review-actions {
   display: grid;
   grid-template-columns: 1fr 1fr;

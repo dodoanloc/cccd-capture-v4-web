@@ -11,7 +11,34 @@
 </head>
 <body>
   <div class="mobile-shell">
-    <section id="cameraSection" class="camera-section">
+    <section id="authSection" class="review-section">
+      <div class="review-head">
+        <h2>Đăng nhập hệ thống</h2>
+      </div>
+      <div class="form-stack">
+        <input id="loginUsername" placeholder="Tên đăng nhập">
+        <input id="loginPassword" type="password" placeholder="Mật khẩu">
+        <button id="loginBtn" class="action-btn primary" type="button">Đăng nhập</button>
+        <div id="loginStatus" class="status info">Vui lòng đăng nhập để sử dụng hệ thống.</div>
+      </div>
+    </section>
+
+    <section id="userBar" class="review-section hidden">
+      <div class="review-head">
+        <h2 id="currentUserLabel">Chưa đăng nhập</h2>
+        <button id="logoutBtn" class="ghost-btn" type="button">Đăng xuất</button>
+      </div>
+      <div id="adminPanel" class="form-stack hidden">
+        <div class="mini-label">QUẢN LÝ USER</div>
+        <input id="newUsername" placeholder="Tên đăng nhập mới">
+        <input id="newPassword" type="password" placeholder="Mật khẩu user mới">
+        <input id="newFullName" placeholder="Họ tên user">
+        <button id="createUserBtn" class="action-btn secondary" type="button">Tạo user thường</button>
+        <div id="adminStatus" class="status info">Admin có thể tạo user thường tại đây.</div>
+      </div>
+    </section>
+
+    <section id="cameraSection" class="camera-section hidden">
       <div class="camera-header">
         <div>
           <div class="mini-label">CCCD FLOW</div>
