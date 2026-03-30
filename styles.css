@@ -197,6 +197,9 @@ input, textarea {
   gap: 10px;
   margin-top: 12px;
 }
+.review-actions.single-action {
+  grid-template-columns: 1fr;
+}
 .debug-box {
   display: none;
   margin: 10px 0 0;

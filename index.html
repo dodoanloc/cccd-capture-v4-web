@@ -61,7 +61,6 @@
     <section id="reviewSection" class="review-section">
       <div class="review-head">
         <h2>Xác nhận thông tin</h2>
-        <button id="copyResidenceBtn" class="text-btn">Thường trú → Hiện tại</button>
       </div>
 
       <div class="form-stack">
@@ -88,8 +87,7 @@
         <textarea id="current_address" rows="3" placeholder="Địa chỉ hiện tại"></textarea>
       </div>
 
-      <div class="review-actions">
-        <button id="runFallbackOcrBtn" class="action-btn secondary">OCR fallback</button>
+      <div class="review-actions single-action">
         <button id="saveBtn" class="action-btn primary">Lưu</button>
       </div>
 
@@ -103,8 +101,7 @@
       </div>
     </div>
 
-    <section class="debug-section">
-      <button id="toggleDebugBtn" class="text-btn block">Hiện / Ẩn debug</button>
+    <section class="debug-section hidden">
       <pre id="debugOutput" class="debug-box">Chưa có dữ liệu debug.</pre>
     </section>
   </div>

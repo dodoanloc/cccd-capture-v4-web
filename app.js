@@ -12,20 +12,15 @@ const els = {
   saveOverlayCard: document.getElementById('saveOverlayCard'),
   saveOverlayTitle: document.getElementById('saveOverlayTitle'),
   saveOverlayText: document.getElementById('saveOverlayText'),
-  qrInput: document.getElementById('qrInput'),
   frontPreview: document.getElementById('frontPreview'),
   backPreview: document.getElementById('backPreview'),
   qrPreview: document.getElementById('qrPreview'),
   statusBanner: document.getElementById('statusBanner'),
   saveStatus: document.getElementById('saveStatus'),
-  copyResidenceBtn: document.getElementById('copyResidenceBtn'),
   debugOutput: document.getElementById('debugOutput'),
-  toggleDebugBtn: document.getElementById('toggleDebugBtn'),
   startCameraBtn: document.getElementById('startCameraBtn'),
   switchCameraBtn: document.getElementById('switchCameraBtn'),
   captureActionBtn: document.getElementById('captureActionBtn'),
-  runFallbackOcrBtn: document.getElementById('runFallbackOcrBtn'),
-  multiImageInput: document.getElementById('multiImageInput'),
   saveBtn: document.getElementById('saveBtn'),
   video: document.getElementById('video'),
   captureCanvas: document.getElementById('captureCanvas'),
@@ -450,55 +445,8 @@ els.switchCameraBtn.addEventListener('click', () => {
   startCamera();
 });
 els.captureActionBtn.addEventListener('click', captureCurrentMode);
-els.qrInput.addEventListener('change', async () => {
-  const file = els.qrInput.files?.[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = async () => {
-    const dataUrl = reader.result;
-    els.qrPreview.src = dataUrl;
-    const decoded = await (new Promise((resolve) => {
-      const img = new Image();
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        canvas.width = img.width;
-        canvas.height = img.height;
-        const ctx = canvas.getContext('2d', { willReadFrequently: true });
-        ctx.drawImage(img, 0, 0);
-        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-        const result = window.jsQR(imageData.data, canvas.width, canvas.height);
-        resolve(result?.data || '');
-      };
-      img.src = dataUrl;
-    }));
-    if (!decoded) return setStatus('Chưa đọc được QR từ ảnh tải lên.', 'error');
-    lastQrText = decoded;
-    lastQrFrameDataUrl = dataUrl;
-    await onQrSuccess();
-    maybeCompleteCaptureFlow();
-  };
-  reader.readAsDataURL(file);
-});
-els.multiImageInput.addEventListener('change', () => {
-  const files = Array.from(els.multiImageInput.files || []);
-  if (files[0]) els.frontPreview.src = URL.createObjectURL(files[0]);
-  if (files[1]) els.backPreview.src = URL.createObjectURL(files[1]);
-  setSaveStatus('Đã nạp ảnh mặt trước/mặt sau.', 'success');
-  maybeCompleteCaptureFlow();
-});
-els.runFallbackOcrBtn.addEventListener('click', runFallbackOcr);
-els.copyResidenceBtn.addEventListener('click', () => {
-  const residence = document.getElementById('place_of_residence').value.trim();
-  if (!residence) return setSaveStatus('Chưa có nơi thường trú để copy.', 'error');
-  document.getElementById('current_address').value = residence;
-  setSaveStatus('Đã copy nơi thường trú sang địa chỉ hiện tại.', 'success');
-});
 els.toggleConfigBtn.addEventListener('click', () => {
   els.configPanel.style.display = els.configPanel.style.display === 'none' ? 'block' : 'none';
-});
-els.toggleDebugBtn.addEventListener('click', () => {
-  debugOpen = !debugOpen;
-  els.debugOutput.classList.toggle('show', debugOpen);
 });
 els.saveBtn.addEventListener('click', saveRecord);
 
