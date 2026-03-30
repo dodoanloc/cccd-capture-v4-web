@@ -185,12 +185,13 @@ video {
 .status.error { background: #fef2f2; color: #b91c1c; }
 .form-stack { display: grid; gap: 10px; }
 .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-input, textarea {
+input, textarea, select {
   width: 100%;
   padding: 14px 14px;
   border: 2px solid var(--border);
   border-radius: 14px;
   font: inherit;
+  background: white;
 }
 .review-actions {
   display: grid;
