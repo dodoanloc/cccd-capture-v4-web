@@ -273,25 +273,6 @@ function captureFullFrameDataUrl(maxWidth = 1280) {
   return canvas.toDataURL('image/jpeg', 0.9);
 }
 
-function captureGuideFrameDataUrl(outputWidth = 1280) {
-  const video = els.video;
-  if (!video.videoWidth || !video.videoHeight) return '';
-  const videoRect = video.getBoundingClientRect();
-  const guideRect = els.guideFrame.getBoundingClientRect();
-  const scaleX = video.videoWidth / videoRect.width;
-  const scaleY = video.videoHeight / videoRect.height;
-  const sx = Math.max(0, Math.round((guideRect.left - videoRect.left) * scaleX));
-  const sy = Math.max(0, Math.round((guideRect.top - videoRect.top) * scaleY));
-  const sWidth = Math.min(video.videoWidth - sx, Math.round(guideRect.width * scaleX));
-  const sHeight = Math.min(video.videoHeight - sy, Math.round(guideRect.height * scaleY));
-  if (sWidth <= 0 || sHeight <= 0) return '';
-  const canvas = els.captureCanvas;
-  const ctx = canvas.getContext('2d');
-  canvas.width = outputWidth;
-  canvas.height = Math.round(outputWidth / 1.58);
-  ctx.drawImage(video, sx, sy, sWidth, sHeight, 0, 0, canvas.width, canvas.height);
-  return canvas.toDataURL('image/jpeg', 0.92);
-}
 
 function formatCompactDate(value) {
   const digits = String(value || '').replace(/\D/g, '');
@@ -380,26 +361,24 @@ function maybeCompleteCaptureFlow() {
     els.cameraSection.classList.add('hidden');
     document.querySelector('.preview-strip')?.classList.add('hidden');
     els.reviewSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    setStatus('Đã đủ QR và 2 ảnh CCCD đã crop theo khung. Vui lòng xác nhận thông tin và bấm Lưu.', 'success');
+    setStatus('Đã đủ QR và 2 ảnh CCCD. Vui lòng xác nhận thông tin và bấm Lưu.', 'success');
     setSaveStatus('Sẵn sàng lưu hồ sơ.', 'success');
     stopCamera();
   }
 }
 
 function captureCurrentMode() {
-  const dataUrl = currentMode === 'front' || currentMode === 'back'
-    ? captureGuideFrameDataUrl()
-    : captureFullFrameDataUrl();
+  const dataUrl = captureFullFrameDataUrl();
   if (!dataUrl) return setStatus('Camera chưa sẵn sàng.', 'error');
   if (currentMode === 'front') {
     els.frontPreview.src = dataUrl;
-    setStatus('Đã chụp mặt trước theo đúng khung. Chuyển sang chụp mặt sau.', 'success');
+    setStatus('Đã chụp mặt trước. Chuyển sang chụp mặt sau.', 'success');
     setMode('back');
     return;
   }
   if (currentMode === 'back') {
     els.backPreview.src = dataUrl;
-    setStatus('Đã chụp mặt sau theo đúng khung.', 'success');
+    setStatus('Đã chụp mặt sau.', 'success');
     maybeCompleteCaptureFlow();
     return;
   }
