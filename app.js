@@ -473,12 +473,15 @@ async function saveRecord() {
       mode: 'cors',
       cache: 'no-store'
     });
-    const json = await res.json();
-    els.debugOutput.textContent = JSON.stringify({ endpoint, save_response: json }, null, 2);
-    if (!res.ok || !json.success) throw new Error(json?.detail || json?.message || `Lưu hồ sơ thất bại (HTTP ${res.status})`);
-    setSaveStatus(`Đã lưu hồ sơ thành công. Record ID: ${json.record_id}`, 'success');
+    const rawText = await res.text();
+    let json = null;
+    try { json = rawText ? JSON.parse(rawText) : null; } catch (_) {}
+    els.debugOutput.textContent = JSON.stringify({ endpoint, status: res.status, rawText, save_response: json }, null, 2);
+    if (!res.ok) throw new Error(json?.detail || json?.message || rawText || `Lưu hồ sơ thất bại (HTTP ${res.status})`);
+    const recordId = json?.record_id || 'N/A';
+    setSaveStatus(`Đã lưu hồ sơ thành công. Record ID: ${recordId}`, 'success');
     setStatus('Đã lưu hồ sơ thành công.', 'success');
-    showSaveOverlay('Lưu thành công', `Record ID: ${json.record_id}`, 'success');
+    showSaveOverlay('Lưu thành công', `Record ID: ${recordId}`, 'success');
     setTimeout(hideSaveOverlay, 2200);
   } catch (err) {
     console.error(err);
