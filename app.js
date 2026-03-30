@@ -109,7 +109,10 @@ async function startCamera() {
     if (currentMode === 'qr') startQrLoop();
   } catch (err) {
     console.error(err);
-    setStatus('Không bật được camera.', 'error');
+    const reason = window.isSecureContext
+      ? 'Trình duyệt chưa được cấp quyền camera hoặc camera đang bị app khác chiếm.'
+      : 'Trình duyệt đang chặn camera vì trang chưa ở secure context (HTTPS hoặc localhost).';
+    setStatus(`Không bật được camera. ${reason}`, 'error');
   }
 }
 
