@@ -200,6 +200,9 @@ input, textarea {
 .review-actions.single-action {
   grid-template-columns: 1fr;
 }
+.review-actions.two-actions {
+  grid-template-columns: 1fr 1fr;
+}
 .debug-box {
   display: none;
   margin: 10px 0 0;

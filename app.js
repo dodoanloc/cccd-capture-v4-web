@@ -21,6 +21,7 @@ const els = {
   startCameraBtn: document.getElementById('startCameraBtn'),
   switchCameraBtn: document.getElementById('switchCameraBtn'),
   captureActionBtn: document.getElementById('captureActionBtn'),
+  newRecordBtn: document.getElementById('newRecordBtn'),
   saveBtn: document.getElementById('saveBtn'),
   video: document.getElementById('video'),
   captureCanvas: document.getElementById('captureCanvas'),
@@ -384,6 +385,28 @@ function captureCurrentMode() {
   }
 }
 
+function resetRecordFlow() {
+  stopCamera();
+  lastQrText = '';
+  lastQrFrameDataUrl = '';
+  ids.forEach((id) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.value = '';
+    el.style.borderColor = '';
+    el.style.background = '';
+  });
+  els.qrPreview.src = '';
+  els.frontPreview.src = '';
+  els.backPreview.src = '';
+  hideSaveOverlay();
+  els.cameraSection.classList.remove('hidden');
+  setMode('qr');
+  setStatus('Bật camera để bắt đầu.', 'info');
+  setSaveStatus('Đã làm mới hồ sơ. Sẵn sàng quét QR mới.', 'info');
+  startCamera();
+}
+
 async function saveRecord() {
   const hasQr = !!lastQrText;
   const frontSrc = els.frontPreview.src;
@@ -448,6 +471,9 @@ els.captureActionBtn.addEventListener('click', captureCurrentMode);
 els.toggleConfigBtn.addEventListener('click', () => {
   els.configPanel.style.display = els.configPanel.style.display === 'none' ? 'block' : 'none';
 });
+els.newRecordBtn.addEventListener('click', resetRecordFlow);
 els.saveBtn.addEventListener('click', saveRecord);
+window.saveRecord = saveRecord;
 
 setMode('qr');
+startCamera();
