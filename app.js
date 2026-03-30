@@ -6,6 +6,8 @@ const els = {
   apiBase: document.getElementById('apiBase'),
   toggleConfigBtn: document.getElementById('toggleConfigBtn'),
   configPanel: document.getElementById('configPanel'),
+  cameraSection: document.getElementById('cameraSection'),
+  reviewSection: document.getElementById('reviewSection'),
   qrInput: document.getElementById('qrInput'),
   frontPreview: document.getElementById('frontPreview'),
   backPreview: document.getElementById('backPreview'),
@@ -217,6 +219,7 @@ async function onQrSuccess() {
   els.qrPreview.src = lastQrFrameDataUrl;
   parseQrText(lastQrText);
   setStatus('Đã đọc QR thành công. Chuyển sang chụp mặt trước CCCD.', 'success');
+  els.cameraSection.classList.remove('hidden');
   setMode('front');
 }
 
@@ -333,6 +336,20 @@ function fillForm(data) {
   });
 }
 
+function maybeCompleteCaptureFlow() {
+  const hasQr = !!lastQrText;
+  const hasFront = !!els.frontPreview.src;
+  const hasBack = !!els.backPreview.src;
+  if (hasQr && hasFront && hasBack) {
+    setMode('review');
+    els.cameraSection.classList.add('hidden');
+    els.reviewSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    setStatus('Đã đủ QR và 2 ảnh CCCD. Vui lòng xác nhận thông tin và bấm Lưu.', 'success');
+    setSaveStatus('Sẵn sàng lưu hồ sơ.', 'success');
+    stopCamera();
+  }
+}
+
 function captureCurrentMode() {
   const dataUrl = captureFullFrameDataUrl();
   if (!dataUrl) return setStatus('Camera chưa sẵn sàng.', 'error');
@@ -344,13 +361,13 @@ function captureCurrentMode() {
   }
   if (currentMode === 'back') {
     els.backPreview.src = dataUrl;
-    setStatus('Đã chụp mặt sau. Cuộn xuống dưới để xác nhận và bấm Lưu.', 'success');
-    setMode('review');
-    document.querySelector('.review-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    maybeCompleteCaptureFlow();
     return;
   }
   if (currentMode === 'review') {
     setMode('front');
+    els.cameraSection.classList.remove('hidden');
+    startCamera();
   }
 }
 
@@ -395,6 +412,7 @@ async function saveRecord() {
     els.debugOutput.textContent = JSON.stringify({ save_request: payload, save_response: json }, null, 2);
     if (!res.ok || !json.success) throw new Error(json?.detail || json?.message || 'Lưu hồ sơ thất bại');
     setSaveStatus(`Đã lưu hồ sơ thành công. Record ID: ${json.record_id}`, 'success');
+    setStatus('Đã lưu hồ sơ thành công.', 'success');
   } catch (err) {
     console.error(err);
     els.debugOutput.textContent = JSON.stringify({ save_request: payload, error: String(err) }, null, 2);
@@ -433,6 +451,7 @@ els.qrInput.addEventListener('change', async () => {
     lastQrText = decoded;
     lastQrFrameDataUrl = dataUrl;
     await onQrSuccess();
+    maybeCompleteCaptureFlow();
   };
   reader.readAsDataURL(file);
 });
@@ -441,7 +460,7 @@ els.multiImageInput.addEventListener('change', () => {
   if (files[0]) els.frontPreview.src = URL.createObjectURL(files[0]);
   if (files[1]) els.backPreview.src = URL.createObjectURL(files[1]);
   setSaveStatus('Đã nạp ảnh mặt trước/mặt sau.', 'success');
-  setMode('review');
+  maybeCompleteCaptureFlow();
 });
 els.runFallbackOcrBtn.addEventListener('click', runFallbackOcr);
 els.copyResidenceBtn.addEventListener('click', () => {
