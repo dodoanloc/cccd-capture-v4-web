@@ -465,24 +465,34 @@ async function saveRecord() {
   els.saveBtn.disabled = true;
   setSaveStatus('Đang lưu hồ sơ vào database local...', 'info');
   showSaveOverlay('Đang lưu hồ sơ…', 'Vui lòng chờ trong giây lát.', 'info');
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 45000);
   try {
-    const res = await fetch(api('/api/cccd/save-record'), {
+    const endpoint = api('/api/cccd/save-record');
+    const res = await fetch(endpoint, {
       method: 'POST',
       body: formData,
+      signal: controller.signal,
+      mode: 'cors',
+      cache: 'no-store'
     });
     const json = await res.json();
-    els.debugOutput.textContent = JSON.stringify({ save_response: json }, null, 2);
-    if (!res.ok || !json.success) throw new Error(json?.detail || json?.message || 'Lưu hồ sơ thất bại');
+    els.debugOutput.textContent = JSON.stringify({ endpoint, save_response: json }, null, 2);
+    if (!res.ok || !json.success) throw new Error(json?.detail || json?.message || `Lưu hồ sơ thất bại (HTTP ${res.status})`);
     setSaveStatus(`Đã lưu hồ sơ thành công. Record ID: ${json.record_id}`, 'success');
     setStatus('Đã lưu hồ sơ thành công.', 'success');
     showSaveOverlay('Lưu thành công', `Record ID: ${json.record_id}`, 'success');
     setTimeout(hideSaveOverlay, 2200);
   } catch (err) {
     console.error(err);
-    els.debugOutput.textContent = JSON.stringify({ error: String(err) }, null, 2);
-    setSaveStatus(`Không lưu được hồ sơ: ${String(err)}`, 'error');
-    showSaveOverlay('Lưu thất bại', String(err), 'error');
+    const detail = err?.name === 'AbortError'
+      ? 'Request save bị timeout sau 45 giây.'
+      : String(err);
+    els.debugOutput.textContent = JSON.stringify({ endpoint: api('/api/cccd/save-record'), error: detail }, null, 2);
+    setSaveStatus(`Không lưu được hồ sơ: ${detail}`, 'error');
+    showSaveOverlay('Lưu thất bại', detail, 'error');
   } finally {
+    clearTimeout(timer);
     els.saveBtn.disabled = false;
   }
 }
