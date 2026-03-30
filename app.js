@@ -42,6 +42,7 @@ let lastQrText = '';
 let lastQrFrameDataUrl = '';
 let useEnvironment = true;
 let debugOpen = false;
+let isSaving = false;
 
 function setStatus(text, type='info') {
   els.statusBanner.className = `status ${type}`;
@@ -433,6 +434,8 @@ function resetRecordFlow() {
 }
 
 async function saveRecord() {
+  if (isSaving) return;
+  isSaving = true;
   const hasQr = !!lastQrText;
   const frontSrc = els.frontPreview.src;
   const backSrc = els.backPreview.src;
@@ -494,6 +497,7 @@ async function saveRecord() {
   } finally {
     clearTimeout(timer);
     els.saveBtn.disabled = false;
+    isSaving = false;
   }
 }
 
