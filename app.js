@@ -412,24 +412,40 @@ function maybeCompleteCaptureFlow() {
   }
 }
 
-function captureGuideFrameDataUrl(outputWidth = 1400) {
+function captureGuideFrameDataUrl(outputWidth = 1600) {
   const video = els.video;
   if (!video.videoWidth || !video.videoHeight) return '';
   const videoRect = video.getBoundingClientRect();
   const guideRect = els.guideFrame.getBoundingClientRect();
-  const scaleX = video.videoWidth / videoRect.width;
-  const scaleY = video.videoHeight / videoRect.height;
-  const sx = Math.max(0, Math.round((guideRect.left - videoRect.left) * scaleX));
-  const sy = Math.max(0, Math.round((guideRect.top - videoRect.top) * scaleY));
-  const sWidth = Math.min(video.videoWidth - sx, Math.round(guideRect.width * scaleX));
-  const sHeight = Math.min(video.videoHeight - sy, Math.round(guideRect.height * scaleY));
+
+  const intrinsicW = video.videoWidth;
+  const intrinsicH = video.videoHeight;
+  const displayW = videoRect.width;
+  const displayH = videoRect.height;
+
+  const scale = Math.max(displayW / intrinsicW, displayH / intrinsicH); // object-fit: cover
+  const renderedW = intrinsicW * scale;
+  const renderedH = intrinsicH * scale;
+  const offsetX = (renderedW - displayW) / 2;
+  const offsetY = (renderedH - displayH) / 2;
+
+  const gx = guideRect.left - videoRect.left;
+  const gy = guideRect.top - videoRect.top;
+  const gw = guideRect.width;
+  const gh = guideRect.height;
+
+  const sx = Math.max(0, Math.round((gx + offsetX) / scale));
+  const sy = Math.max(0, Math.round((gy + offsetY) / scale));
+  const sWidth = Math.min(intrinsicW - sx, Math.round(gw / scale));
+  const sHeight = Math.min(intrinsicH - sy, Math.round(gh / scale));
   if (sWidth <= 0 || sHeight <= 0) return '';
+
   const canvas = els.captureCanvas;
   const ctx = canvas.getContext('2d');
   canvas.width = outputWidth;
   canvas.height = Math.round(outputWidth / 1.58);
   ctx.drawImage(video, sx, sy, sWidth, sHeight, 0, 0, canvas.width, canvas.height);
-  return canvas.toDataURL('image/jpeg', 0.95);
+  return canvas.toDataURL('image/jpeg', 0.97);
 }
 
 function captureCurrentMode() {
