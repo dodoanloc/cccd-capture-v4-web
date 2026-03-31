@@ -495,13 +495,14 @@ function resetRecordFlow() {
 
 async function saveRecord() {
   if (isSaving) return;
-  isSaving = true;
   const hasQr = !!lastQrText;
   const frontSrc = els.frontPreview.src;
   const backSrc = els.backPreview.src;
   if (!hasQr || !frontSrc || !backSrc || !frontSrc.startsWith('data:') || !backSrc.startsWith('data:')) {
-    return setSaveStatus('Cần có QR, ảnh mặt trước và ảnh mặt sau trước khi lưu.', 'error');
+    setSaveStatus('Cần có QR, ảnh mặt trước và ảnh mặt sau trước khi lưu.', 'error');
+    return;
   }
+  isSaving = true;
 
   const formData = new FormData();
   formData.append('full_name', document.getElementById('full_name').value.trim());
@@ -527,7 +528,7 @@ async function saveRecord() {
   setSaveStatus('Đang lưu hồ sơ vào database local...', 'info');
   showSaveOverlay('Đang lưu hồ sơ…', 'Vui lòng chờ trong giây lát.', 'info');
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 45000);
+  const timer = setTimeout(() => controller.abort(), 15000);
   try {
     const endpoint = api('/api/cccd/save-record');
     const res = await fetch(endpoint, {
@@ -550,7 +551,7 @@ async function saveRecord() {
   } catch (err) {
     console.error(err);
     const detail = err?.name === 'AbortError'
-      ? 'Request save bị timeout sau 45 giây.'
+      ? 'Request save bị timeout sau 15 giây. Nếu hồ sơ vẫn xuất hiện ở web tra cứu thì backend đã lưu nhưng trình duyệt không nhận được phản hồi.'
       : String(err);
     els.debugOutput.textContent = JSON.stringify({ endpoint: api('/api/cccd/save-record'), error: detail }, null, 2);
     setSaveStatus(`Không lưu được hồ sơ: ${detail}`, 'error');
