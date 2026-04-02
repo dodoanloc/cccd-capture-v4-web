@@ -83,6 +83,12 @@ h2 { font-size: 18px; }
   border: 1px solid var(--border);
   color: var(--text);
 }
+.action-btn.ready-print {
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  color: white;
+  border: none;
+  box-shadow: 0 10px 20px rgba(99,102,241,.22);
+}
 .stepper {
   display: flex;
   gap: 8px;
