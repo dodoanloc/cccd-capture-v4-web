@@ -73,6 +73,11 @@ h2 { font-size: 18px; }
   background: linear-gradient(135deg, var(--primary), var(--primary-dark));
   color: white;
 }
+.action-btn:disabled {
+  opacity: .55;
+  cursor: not-allowed;
+  filter: grayscale(.1);
+}
 .action-btn.secondary {
   background: white;
   border: 1px solid var(--border);
