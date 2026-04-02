@@ -355,7 +355,7 @@ function generateQrDataUrlFromText(text) {
   return canvas.toDataURL('image/png');
 }
 
-const API_BASE_DEFAULT = 'https://backendcccd.agrithoxuan.id.vn';
+const API_BASE_DEFAULT = '';
 
 function api(path) {
   return `${API_BASE_DEFAULT}${path}`;
@@ -578,37 +578,25 @@ async function saveRecord() {
     created_by: currentUser?.username || ''
   };
 
-  let requestBody;
-  let requestHeaders = {};
-  let endpoint = api('/api/cccd/save-record');
-  if (isLikelyMobile()) {
-    endpoint = api('/api/cccd/save-record-json');
-    requestHeaders['Content-Type'] = 'application/json';
-    requestBody = JSON.stringify({
-      ...basePayload,
-      front_image_data_url: await blobToDataUrl(frontBlob),
-      back_image_data_url: await blobToDataUrl(backBlob)
-    });
-  } else {
-    const formData = new FormData();
-    Object.entries(basePayload).forEach(([k, v]) => formData.append(k, v));
-    formData.append('front_image', frontBlob, 'front.jpg');
-    formData.append('back_image', backBlob, 'back.jpg');
-    requestBody = formData;
-  }
+  const requestHeaders = {};
+  const endpoint = api('/api/cccd/save-record');
+  const formData = new FormData();
+  Object.entries(basePayload).forEach(([k, v]) => formData.append(k, v));
+  formData.append('front_image', frontBlob, 'front.jpg');
+  formData.append('back_image', backBlob, 'back.jpg');
+  const requestBody = formData;
 
   setSaveStatus('Đã chuẩn bị xong ảnh. Đang gửi yêu cầu lưu...', 'info');
   showSaveOverlay('Đang lưu hồ sơ…', 'Ảnh đã chuẩn bị xong, đang gửi yêu cầu tới backend.', 'info');
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), isLikelyMobile() ? 60000 : 45000);
+  const timer = setTimeout(() => controller.abort(), isLikelyMobile() ? 45000 : 45000);
   try {
-    if (isLikelyMobile()) {
-      const probeForm = new FormData();
-      probeForm.append('note', `mobile-probe:${frontBlob.size}:${backBlob.size}`);
-      try {
-        await fetch(api('/api/cccd/save-probe'), { method: 'POST', body: probeForm, cache: 'no-store' });
-      } catch (_) {}
-    } else {
+    const probeForm = new FormData();
+    probeForm.append('note', `save-probe:${frontBlob.size}:${backBlob.size}:${isLikelyMobile() ? 'mobile' : 'desktop'}`);
+    try {
+      await fetch(api('/api/cccd/save-probe'), { method: 'POST', body: probeForm, cache: 'no-store' });
+    } catch (_) {}
+    if (!isLikelyMobile()) {
       els.debugOutput.textContent = JSON.stringify({ stage: 'fetch-start', endpoint, frontSize: frontBlob.size, backSize: backBlob.size }, null, 2);
     }
     const res = await fetch(endpoint, {
@@ -621,18 +609,12 @@ async function saveRecord() {
       keepalive: false
     });
     const status = res.status;
-    let rawText = '';
+    const rawText = await Promise.race([
+      res.text(),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('Đọc phản hồi save quá chậm.')), 5000))
+    ]);
     let json = null;
-    if (isLikelyMobile()) {
-      json = await res.json();
-      rawText = JSON.stringify(json);
-    } else {
-      rawText = await Promise.race([
-        res.text(),
-        new Promise((_, reject) => setTimeout(() => reject(new Error('Đọc phản hồi save quá chậm.')), 5000))
-      ]);
-      try { json = rawText ? JSON.parse(rawText) : null; } catch (_) {}
-    }
+    try { json = rawText ? JSON.parse(rawText) : null; } catch (_) {}
     if (!isLikelyMobile()) {
       els.debugOutput.textContent = JSON.stringify({ endpoint, status, rawText, save_response: json }, null, 2);
     }
