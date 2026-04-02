@@ -8,6 +8,25 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css" />
+  <style>
+    .print-page-body{background:#f8fafc;margin:0}
+    .print-root{display:flex;justify-content:center;padding:8px}
+    .print-sheet{width:210mm;min-height:297mm;padding:6mm 6mm 5mm;font-family:'Plus Jakarta Sans',sans-serif;background:#fff;overflow:hidden}
+    .print-header{display:grid;grid-template-columns:1fr 60mm;gap:3mm;margin-bottom:3mm;align-items:start}
+    .print-meta{font-size:11px;line-height:1.28}.print-meta h1{font-size:17px;margin:0 0 2mm}
+    .print-qr-top{border:1px solid #ccc;border-radius:8px;padding:1mm;background:#fff}
+    .print-qr-top img{width:100%;height:42mm;object-fit:contain;display:block}
+    .print-grid{display:grid;grid-template-columns:1fr 1fr;gap:3mm;align-items:start}
+    .print-card{border:1px solid #ccc;border-radius:8px;padding:1mm;background:#fff;height:102mm;display:flex;align-items:center;justify-content:center;overflow:hidden}
+    .print-card img{width:50%;height:50%;object-fit:contain;object-position:center;display:block}
+    .muted{color:#64748b}
+    @media print {
+      body{background:#fff}
+      #printStatus{display:none!important}
+      .print-root{padding:0}
+      .print-sheet{box-shadow:none}
+    }
+  </style>
 </head>
 <body class="print-page-body">
   <div id="printStatus" class="panel">Đang chuẩn bị bản in…</div>
