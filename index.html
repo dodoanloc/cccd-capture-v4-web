@@ -76,7 +76,7 @@
         <button id="captureActionBtn" class="action-btn primary capture-large">Quét QR</button>
       </div>
 
-      <div class="preview-strip">
+      <div class="preview-strip hidden">
         <div class="preview-pill"><span>QR</span><img id="qrPreview" alt="QR"></div>
         <div class="preview-pill"><span>Trước</span><img id="frontPreview" alt="Mặt trước"></div>
         <div class="preview-pill"><span>Sau</span><img id="backPreview" alt="Mặt sau"></div>
@@ -123,13 +123,9 @@
         <textarea id="current_address" rows="3" placeholder="Địa chỉ hiện tại"></textarea>
       </div>
 
-      <div class="review-preview-strip">
-        <button id="retakeFrontBtn" class="preview-pill preview-action" type="button"><span>Mặt trước</span><img id="reviewFrontPreview" alt="Mặt trước"><small>Chạm để chụp lại</small></button>
-        <button id="retakeBackBtn" class="preview-pill preview-action" type="button"><span>Mặt sau</span><img id="reviewBackPreview" alt="Mặt sau"><small>Chạm để chụp lại</small></button>
-      </div>
-
       <div class="review-actions stacked-actions">
         <button id="saveBtn" class="action-btn primary" type="button">Lưu</button>
+        <button id="printA4Btn" class="action-btn secondary" type="button" disabled>In A4</button>
         <button id="newRecordBtn" class="action-btn secondary" type="button" onclick="resetRecordFlow()">Tạo mới</button>
       </div>
 

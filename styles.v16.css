@@ -178,7 +178,7 @@ video {
   object-fit: cover;
   border-radius: 10px;
   background: #e2e8f0;
-}.review-preview-strip{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}.preview-action{appearance:none;-webkit-appearance:none;background:#fff;border:1px solid var(--border);text-align:left;padding:10px;cursor:pointer}.preview-action small{display:block;margin-top:6px;color:var(--muted);font-size:12px;font-weight:700}
+}
 .status {
   margin-top: 10px;
   padding: 12px 14px;

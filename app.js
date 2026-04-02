@@ -29,10 +29,7 @@ const els = {
   frontPreview: document.getElementById('frontPreview'),
   backPreview: document.getElementById('backPreview'),
   qrPreview: document.getElementById('qrPreview'),
-  reviewFrontPreview: document.getElementById('reviewFrontPreview'),
-  reviewBackPreview: document.getElementById('reviewBackPreview'),
-  retakeFrontBtn: document.getElementById('retakeFrontBtn'),
-  retakeBackBtn: document.getElementById('retakeBackBtn'),
+  printA4Btn: document.getElementById('printA4Btn'),
   statusBanner: document.getElementById('statusBanner'),
   saveStatus: document.getElementById('saveStatus'),
   debugOutput: document.getElementById('debugOutput'),
@@ -64,6 +61,7 @@ let isSaving = false;
 let currentUser = null;
 let frontImageBlob = null;
 let backImageBlob = null;
+let lastSavedRecordId = '';
 let frontUploadedPath = '';
 let backUploadedPath = '';
 let frontUploadPromise = null;
@@ -456,17 +454,11 @@ function fillForm(data) {
   });
 }
 
-function syncReviewPreviews() {
-  if (els.reviewFrontPreview) els.reviewFrontPreview.src = els.frontPreview.src || '';
-  if (els.reviewBackPreview) els.reviewBackPreview.src = els.backPreview.src || '';
-}
-
 function maybeCompleteCaptureFlow() {
   const hasQr = !!lastQrText;
   const hasFront = !!els.frontPreview.src;
   const hasBack = !!els.backPreview.src;
   if (hasQr && hasFront && hasBack) {
-    syncReviewPreviews();
     setMode('review');
     els.cameraSection.classList.add('hidden');
     els.reviewSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -526,7 +518,6 @@ async function captureCurrentMode() {
       frontUploadPromise = null;
       els.frontPreview.src = objectUrl;
       els.frontPreview.dataset.objectUrl = objectUrl;
-      syncReviewPreviews();
       if (isLikelyMobile()) {
         setSaveStatus('Đang tải nền ảnh mặt trước...', 'info');
         startBackgroundImageUpload('front', blob);
@@ -542,7 +533,6 @@ async function captureCurrentMode() {
       backUploadPromise = null;
       els.backPreview.src = objectUrl;
       els.backPreview.dataset.objectUrl = objectUrl;
-      syncReviewPreviews();
       if (isLikelyMobile()) {
         setSaveStatus('Đang tải nền ảnh mặt sau...', 'info');
         startBackgroundImageUpload('back', blob);
@@ -616,7 +606,8 @@ function resetRecordFlow() {
   els.qrPreview.src = '';
   els.frontPreview.src = '';
   els.backPreview.src = '';
-  syncReviewPreviews();
+  lastSavedRecordId = '';
+  if (els.printA4Btn) els.printA4Btn.disabled = true;
   document.querySelector('.preview-strip')?.classList.remove('hidden');
   hideSaveOverlay();
   els.cameraSection.classList.remove('hidden');
@@ -784,13 +775,11 @@ async function saveRecord() {
       const json = await res.json();
       if (!res.ok || !json?.success) throw new Error(json?.detail || 'Ghi hồ sơ thất bại');
       const recordId = json?.record_id || 'N/A';
+      lastSavedRecordId = recordId;
+      if (els.printA4Btn) els.printA4Btn.disabled = !recordId || recordId === 'N/A';
       setSaveStatus(`Đã lưu hồ sơ thành công. Record ID: ${recordId}`, 'success');
       setStatus('Đã lưu hồ sơ thành công.', 'success');
-      showSaveOverlay('Lưu thành công', `Record ID: ${recordId}. Đang chuẩn bị hồ sơ mới...`, 'success');
-      setTimeout(() => {
-        hideSaveOverlay();
-        resetRecordFlow();
-      }, 1200);
+      showSaveOverlay('Lưu thành công', `Record ID: ${recordId}.`, 'success');
       return;
     }
 
@@ -906,8 +895,31 @@ els.captureActionBtn.addEventListener('click', captureCurrentMode);
 els.toggleConfigBtn.addEventListener('click', () => {
   els.configPanel.style.display = els.configPanel.style.display === 'none' ? 'block' : 'none';
 });
+function retakeCardFace(face) {
+  pauseVersionWatcher();
+  if (face === 'front') {
+    frontUploadedPath = '';
+    frontUploadPromise = null;
+    setMode('front');
+    els.cameraSection.classList.remove('hidden');
+    setStatus('Chụp lại mặt trước CCCD.', 'info');
+    startCamera();
+    return;
+  }
+  if (face === 'back') {
+    backUploadedPath = '';
+    backUploadPromise = null;
+    setMode('back');
+    els.cameraSection.classList.remove('hidden');
+    setStatus('Chụp lại mặt sau CCCD.', 'info');
+    startCamera();
+  }
+}
+
 els.newRecordBtn.addEventListener('click', resetRecordFlow);
 els.saveBtn.addEventListener('click', saveRecord);
+els.retakeFrontBtn?.addEventListener('click', () => retakeCardFace('front'));
+els.retakeBackBtn?.addEventListener('click', () => retakeCardFace('back'));
 window.resetRecordFlow = resetRecordFlow;
 window.saveRecord = saveRecord;
 
