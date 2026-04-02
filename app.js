@@ -29,6 +29,10 @@ const els = {
   frontPreview: document.getElementById('frontPreview'),
   backPreview: document.getElementById('backPreview'),
   qrPreview: document.getElementById('qrPreview'),
+  reviewFrontPreview: document.getElementById('reviewFrontPreview'),
+  reviewBackPreview: document.getElementById('reviewBackPreview'),
+  retakeFrontBtn: document.getElementById('retakeFrontBtn'),
+  retakeBackBtn: document.getElementById('retakeBackBtn'),
   statusBanner: document.getElementById('statusBanner'),
   saveStatus: document.getElementById('saveStatus'),
   debugOutput: document.getElementById('debugOutput'),
@@ -452,14 +456,19 @@ function fillForm(data) {
   });
 }
 
+function syncReviewPreviews() {
+  if (els.reviewFrontPreview) els.reviewFrontPreview.src = els.frontPreview.src || '';
+  if (els.reviewBackPreview) els.reviewBackPreview.src = els.backPreview.src || '';
+}
+
 function maybeCompleteCaptureFlow() {
   const hasQr = !!lastQrText;
   const hasFront = !!els.frontPreview.src;
   const hasBack = !!els.backPreview.src;
   if (hasQr && hasFront && hasBack) {
+    syncReviewPreviews();
     setMode('review');
     els.cameraSection.classList.add('hidden');
-    document.querySelector('.preview-strip')?.classList.add('hidden');
     els.reviewSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
     setStatus('Đã đủ QR và 2 ảnh CCCD đã crop theo khung camera. Vui lòng xác nhận thông tin và bấm Lưu.', 'success');
     setSaveStatus('Đã chụp xong. Hệ thống đang hoàn tất upload ảnh nền...', 'info');
@@ -517,6 +526,7 @@ async function captureCurrentMode() {
       frontUploadPromise = null;
       els.frontPreview.src = objectUrl;
       els.frontPreview.dataset.objectUrl = objectUrl;
+      syncReviewPreviews();
       if (isLikelyMobile()) {
         setSaveStatus('Đang tải nền ảnh mặt trước...', 'info');
         startBackgroundImageUpload('front', blob);
@@ -532,6 +542,7 @@ async function captureCurrentMode() {
       backUploadPromise = null;
       els.backPreview.src = objectUrl;
       els.backPreview.dataset.objectUrl = objectUrl;
+      syncReviewPreviews();
       if (isLikelyMobile()) {
         setSaveStatus('Đang tải nền ảnh mặt sau...', 'info');
         startBackgroundImageUpload('back', blob);
@@ -605,6 +616,7 @@ function resetRecordFlow() {
   els.qrPreview.src = '';
   els.frontPreview.src = '';
   els.backPreview.src = '';
+  syncReviewPreviews();
   document.querySelector('.preview-strip')?.classList.remove('hidden');
   hideSaveOverlay();
   els.cameraSection.classList.remove('hidden');

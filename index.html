@@ -44,8 +44,8 @@
           <div class="mini-label">CCCD FLOW</div>
           <h1 id="stepTitle">Quét QR</h1>
         </div>
-        <button id="switchCameraBtn" class="ghost-btn">Đổi camera</button>
-        <button id="toggleConfigBtn" class="ghost-btn">API</button>
+        <button id="switchCameraBtn" class="ghost-btn hidden">Đổi camera</button>
+        <button id="toggleConfigBtn" class="ghost-btn hidden">API</button>
       </div>
 
       <div id="configPanel" class="config-panel" style="display:none;">
@@ -71,9 +71,9 @@
         </div>
       </div>
 
-      <div class="camera-actions">
-        <button id="startCameraBtn" class="action-btn secondary">Bật camera</button>
-        <button id="captureActionBtn" class="action-btn primary">Quét QR</button>
+      <div class="camera-actions single-capture">
+        <button id="startCameraBtn" class="action-btn secondary hidden">Bật camera</button>
+        <button id="captureActionBtn" class="action-btn primary capture-large">Quét QR</button>
       </div>
 
       <div class="preview-strip">
@@ -121,6 +121,11 @@
         <textarea id="place_of_origin" rows="2" placeholder="Quê quán" class="hidden"></textarea>
         <textarea id="place_of_residence" rows="3" placeholder="Nơi thường trú"></textarea>
         <textarea id="current_address" rows="3" placeholder="Địa chỉ hiện tại"></textarea>
+      </div>
+
+      <div class="review-preview-strip">
+        <button id="retakeFrontBtn" class="preview-pill preview-action" type="button"><span>Mặt trước</span><img id="reviewFrontPreview" alt="Mặt trước"><small>Chạm để chụp lại</small></button>
+        <button id="retakeBackBtn" class="preview-pill preview-action" type="button"><span>Mặt sau</span><img id="reviewBackPreview" alt="Mặt sau"><small>Chạm để chụp lại</small></button>
       </div>
 
       <div class="review-actions stacked-actions">
